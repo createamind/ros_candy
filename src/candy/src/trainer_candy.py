@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
-from modules.c3d import C3D_Encoder
+# from modules.c3d import C3D_Encoder
 
-from modules.policy_gradient import PG, PGLoss
+# from modules.policy_gradient import PG, PGLoss
 
-from modules.deconv import ImageDecoder
+# from modules.deconv import ImageDecoder
 
 from modules.losses import MSELoss, CrossEntropyLoss
 
@@ -73,7 +73,7 @@ class Machine(object):
 		z = tf.clip_by_value(z, -5, 5)
 		test_z = tf.clip_by_value(test_z, -5, 5)
 
-		z = tf.Print(z, [z[0]], summarize=15)
+		# z = tf.Print(z, [z[0]], summarize=15)
 		# test_z = tf.Print(test_z, [test_z[0]], summarize=20)
 
 		self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
@@ -282,8 +282,8 @@ class Machine(object):
 
 
 
-TRAIN_EPOCH = 15
-BATCH_SIZE = 8
+TRAIN_EPOCH = 100
+BATCH_SIZE = 64
 global_step = 0
 
 
@@ -335,8 +335,7 @@ if __name__ == '__main__':
 			param = []
 			for each in machine.params:
 				param.append(np.array(each.eval(session=machine.sess)))
-			param = np.array(param)
-
+			# param = np.array(param)
 			outmsg = msgpack.packb(param, use_bin_type=True)
 			update_weights(outmsg)
 

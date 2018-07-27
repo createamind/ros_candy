@@ -115,13 +115,14 @@ if __name__=="__main__":
     control_speed = 0
     control_turn = 0
 
-    rate = rospy.Rate(50) # 10hz
+    rate = rospy.Rate(10) # 10hz
     try:
         print msg
         print vels(speed,turn)
         while not rospy.is_shutdown():
             global now_control
             key = decode_control(now_control)
+            now_control = 0
             if key in moveBindings.keys():
                 x = moveBindings[key][0]
                 th = moveBindings[key][1]
