@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 
 def nature_cnn(unscaled_images, **conv_kwargs):
     """

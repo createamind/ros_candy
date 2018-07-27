@@ -30,7 +30,6 @@
 import rospy
 
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Int16
 
 import sys, select, termios, tty
 
@@ -88,22 +87,11 @@ turn = 1
 def vels(speed,turn):
     return "currently:\tspeed %s\tturn %s " % (speed,turn)
 
-now_control = 0
-
-def receive_control(control):
-    global now_control
-    now_control = control.data
-
-def decode_control(cod):
-    cod_table = ['', 'u', 'i', 'o', 'j', 'l', 'm', ',', '.', 'k', 'k', 'k', 'k']
-    return cod_table[cod]
-
 if __name__=="__main__":
     settings = termios.tcgetattr(sys.stdin)
-    
     rospy.init_node('roch_teleop')
-    pub = rospy.Publisher('~cmd_vel', Twist, queue_size=1)
-    sub = rospy.Subscriber('/control', Int16, receive_control, queue_size=1)
+    pub = rospy.Publisher('~cmd_vel', Twist, queue_size=5)
+
     x = 0
     th = 0
     status = 0
@@ -113,14 +101,11 @@ if __name__=="__main__":
     target_turn = 0
     control_speed = 0
     control_turn = 0
-
-    rate = rospy.Rate(50) # 10hz
     try:
         print msg
         print vels(speed,turn)
-        while not rospy.is_shutdown():
-            global now_control
-            key = decode_control(now_control)
+        while(1):
+            key = getKey()
             if key in moveBindings.keys():
                 x = moveBindings[key][0]
                 th = moveBindings[key][1]
@@ -168,7 +153,6 @@ if __name__=="__main__":
             twist.linear.x = control_speed; twist.linear.y = 0; twist.linear.z = 0
             twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = control_turn
             pub.publish(twist)
-            rate.sleep()
 
             #print("loop: {0}".format(count))
             #print("target: vx: {0}, wz: {1}".format(target_speed, target_turn))

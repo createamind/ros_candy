@@ -52,11 +52,11 @@ try:
 except ImportError:
 	raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
-WINDOW_WIDTH = 500
-WINDOW_HEIGHT = 500
+WINDOW_WIDTH = 320
+WINDOW_HEIGHT = 320
 MINI_WINDOW_WIDTH = 200
 MINI_WINDOW_HEIGHT = 200
-BUFFER_LIMIT = 258
+BUFFER_LIMIT = 30
 
 
 class Carla_Wrapper(object):
@@ -71,7 +71,7 @@ class Carla_Wrapper(object):
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
 		self.last_frame = None
 
-		self.publisher = rospy.Publisher('/train_data', String, queue_size=10)
+		self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
 
 	def update_reward(self, cnt, obs, action, reward):
@@ -100,6 +100,7 @@ class Carla_Wrapper(object):
 	def pre_process(self, inputs, refresh=False):
 
 		image, control, reward, std_control, manual = inputs
+		image = image.astype(np.float32) / 128 - 1
 
 		nowframe = image
 		if self.last_frame is None:
@@ -176,7 +177,7 @@ class Carla_Wrapper(object):
 			msg_input = msgpack.packb([obs, self.state], use_bin_type=True)
 			msg_output = model_step(msg_input)
 			action, _, _, _, _ = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
-			print(action)
+			# print(action)
 			return action
 		except rospy.ServiceException as e:
 			print("Service call failed: %s" % e)
@@ -208,6 +209,7 @@ class CarlaGame(object):
 	def execute(self):
 		self._on_loop()
 		self._on_render()
+		pygame.event.pump() # process event queue
 
 
 	def _on_loop(self):
@@ -225,6 +227,8 @@ class CarlaGame(object):
 
 		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, self.manual])
 
+		if type(model_control) != int:
+			model_control = model_control[0]
 		print(control)
 		print(model_control)
 
@@ -234,7 +238,7 @@ class CarlaGame(object):
 			self.publisher.publish(model_control)
 
 		if self.endnow or (self.canreplay and self.cnt > BUFFER_LIMIT):
-			self.carla_wrapper.post_process([self._main_image, model_control, -1, control, self.manual], self.cnt)
+			self.carla_wrapper.post_process([self._main_image, model_control, 0, control, self.manual], self.cnt)
 			self.cnt = 0
 			self.endnow = False
 		else:
@@ -300,11 +304,11 @@ class CarlaGame(object):
 			cod = 2
 		elif steer == 1 and th == 1:
 			cod = 3
-		if steer == -1 and th == 0:
+		elif steer == -1 and th == 0:
 			cod = 4
 		elif steer == 1 and th == 0:
 			cod = 5
-		if steer == -1 and th == -1:
+		elif steer == -1 and th == -1:
 			cod = 6
 		elif steer == 0 and th == -1:
 			cod = 7
@@ -318,6 +322,7 @@ class CarlaGame(object):
 			return
 		if self._main_image is not None:
 			array = self._main_image
+			# print(array.shape)
 			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 			self._display.blit(surface, (0, 0))
 
@@ -340,8 +345,9 @@ class WrapperCandy():
 
 	def load_image(self, image_msg):
 		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		cv_image = cv2.resize(cv_image,(320,320))
+		# print(cv_image)
 		image = cv_image[...,::-1]
-		print(image)
 		self.image = image
 
 		

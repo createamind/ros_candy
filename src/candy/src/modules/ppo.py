@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 import os
 import time
 import numpy as np
@@ -8,7 +9,7 @@ import gym
 from gym.spaces import Box, Discrete, Tuple
 from modules import policies
 # from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm
-from baselines.common.distributions import make_pdtype
+from modules.distributions import make_pdtype
 
 from tensorflow.contrib import rnn
 

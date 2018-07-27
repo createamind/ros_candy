@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 from modules.c3d import C3D_Encoder
 
 from modules.policy_gradient import PG, PGLoss

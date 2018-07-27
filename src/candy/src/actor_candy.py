@@ -30,8 +30,9 @@ from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
 import rospy
 
-
-print = functools.partial(print, flush=True)
+import sys
+if not (sys.version_info[0] < 3):
+	print = functools.partial(print, flush=True)
 
 class ARGS(object):
 	pass
@@ -43,11 +44,11 @@ class Machine(object):
 		self.args = args
 
 		#Building Graph
-		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 8))
-		self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
+		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 6))
+		# self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
 
-		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 8))
-		self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
+		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 6))
+		# self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
 
 		#[self.image_sequence, self.raw_image, self.depth_image, self.seg_image, self.speed, self.collision, self.intersection, self.control, self.reward, self.transition]
 
@@ -174,13 +175,18 @@ class Machine(object):
 		self.sess = tf.Session(config = config)
 		self.writer = tf.summary.FileWriter('logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), self.sess.graph)
 
-
 		self.sess.run(tf.global_variables_initializer())
 
 		print('Restoring!')
 
 		for part in self.variable_parts:
 			part.variable_restore(self.sess)
+
+
+		print('Get_Params!')
+		self.params = []
+		for va in tf.trainable_variables():
+			self.params.append(va)
 
 		print('Model Started!')
 
@@ -196,25 +202,26 @@ class Machine(object):
 		# mask = np.zeros(1)
 		td_map = {self.ppo.act_model.S:state}
 		td_map[self.test_raw_image] = np.array([obs[0]])
-		td_map[self.test_speed] = np.array([[obs[1]]])
+		# td_map[self.test_speed] = np.array([[obs[1]]])
 
 		return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.test_vae_loss.recon], td_map)
 
 
 	def value(self, obs, state, action):
 		# mask = np.zeros(1)
-		td_map = {self.ppo.act_model.S:state, self.ppo.act_model.a_z: [action]}
+		if type(action) == int:
+			action = [action]
+		td_map = {self.ppo.act_model.S:state, self.ppo.act_model.a_z: action}
 		td_map[self.test_raw_image] = np.array([obs[0]])
-		td_map[self.test_speed] = np.array([[obs[1]]])
+		# td_map[self.test_speed] = np.array([[obs[1]]])
 		return self.sess.run([self.ppo.act_model.a_z, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogpz, self.test_vae_loss.recon], td_map)
 	
-	def update_weights(self):
-		print('Restoring!')
+	def update_weights(self, mat):
 
-		for part in self.variable_parts:
-			part.variable_restore(self.sess)
+		for ind, each in enumerate(self.params):
+			self.sess.run(self.params[ind].assign(mat[ind]))
 
-		print('Model Started!')
+		print('Weights Updated!')
 
 
 
@@ -226,19 +233,25 @@ if __name__ == '__main__':
 
 	def step(data):
 		obs, state = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
+		# print(np.array(obs).shape)
+		# print(np.array(state).shape)
 		a, b, c, d, e = machine.step(obs, state)
 		outmsg = msgpack.packb([a,b,c,d,e], use_bin_type=True)
 		return outmsg
 
 	def value(data):
 		obs, state, action = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
+		# print(np.array(obs).shape)
+		# print(np.array(state).shape)
+		# print(np.array(action).shape)
 		a,b,c,d,e = machine.value(obs, state, action)
 		outmsg = msgpack.packb([a,b,c,d,e], use_bin_type=True)
 		return outmsg
 
 	def update_weights(data):
-		machine.update_weights()
-		return data.a
+		param = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
+		machine.update_weights(param)
+		return None
 
 	_ = rospy.Service('model_step', Step, step)
 	_ = rospy.Service('model_value', Value, value)

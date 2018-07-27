@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 from scipy.misc import imsave
 
 import sys
@@ -48,20 +49,20 @@ class VAE():
 				x = tf.nn.relu(tf.layers.conv2d_transpose(x, 128, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				x = tf.nn.relu(tf.layers.conv2d_transpose(x, 64, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				x = tf.nn.relu(tf.layers.conv2d_transpose(x, 16, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
-				x = tf.nn.tanh(tf.layers.conv2d_transpose(x, 8, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
+				x = tf.nn.tanh(tf.layers.conv2d_transpose(x, 6, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 		
 		return x
 
 	def inference(self):
 
-		timage = tf.cast((self.x + 1) * 127, tf.uint8)
+		timage = tf.cast((self.x + 1) * 128, tf.uint8)
 		tf.summary.image("raw_image_real", timage[:,:,:,:3])
 		# tf.summary.image("raw_image_real", timage[:,:,:,4:])
 
 		mean, logsigma = self.encoder(self.x)
 		recon_x = self.decoder(mean, logsigma)
 
-		timage = tf.cast((recon_x + 1) * 127, tf.uint8)
+		timage = tf.cast((recon_x + 1) * 128, tf.uint8)
 		tf.summary.image("raw_image_recon", timage[:,:,:,:3])
 		# tf.summary.image("raw_image_recon", timage[:,:,:,4:])
 
@@ -108,9 +109,12 @@ class VAELoss():
 	def inference(self):
 		const = 1 / (self.args['batch_size'] * self.args['x_dim'] * self.args['y_dim'])
 		
+		# self.x = tf.Print(self.x, [self.x])
+		# self.recon_x = tf.Print(self.recon_x, [self.recon_x])
+
 		self.recon = const * tf.reduce_sum(tf.squared_difference(self.x, self.recon_x))
 		self.vae = const * -0.5 * tf.reduce_sum(1.0 + 2.0 * self.logsigma - tf.square(self.mu) - tf.exp(2 * self.logsigma))
-		
+
 		tf.summary.scalar(self.name + 'loss_vae', self.vae)
 		tf.summary.scalar(self.name + 'loss_recon', self.recon)
 
@@ -157,7 +161,7 @@ class VAEVisualize():
 				x = tf.nn.relu(tf.layers.conv2d_transpose(x, 128, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				x = tf.nn.relu(tf.layers.conv2d_transpose(x, 64, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				x = tf.nn.relu(tf.layers.conv2d_transpose(x, 16, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
-				x = tf.nn.tanh(tf.layers.conv2d_transpose(x, 8, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
+				x = tf.nn.tanh(tf.layers.conv2d_transpose(x, 6, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 
 		return x
 

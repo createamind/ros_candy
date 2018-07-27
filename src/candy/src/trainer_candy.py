@@ -30,7 +30,10 @@ m.patch()
 import rospy
 
 
-print = functools.partial(print, flush=True)
+import sys
+if not (sys.version_info[0] < 3):
+	print = functools.partial(print, flush=True)
+
 
 class ARGS(object):
 	pass
@@ -42,11 +45,11 @@ class Machine(object):
 		self.args = args
 
 		#Building Graph
-		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 8))
-		self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
+		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 6))
+		# self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
 
-		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 8))
-		self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
+		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 6))
+		# self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
 
 		#[self.image_sequence, self.raw_image, self.depth_image, self.seg_image, self.speed, self.collision, self.intersection, self.control, self.reward, self.transition]
 
@@ -70,7 +73,7 @@ class Machine(object):
 		z = tf.clip_by_value(z, -5, 5)
 		test_z = tf.clip_by_value(test_z, -5, 5)
 
-		# z = tf.Print(z, [z[0]], summarize=15)
+		z = tf.Print(z, [z[0]], summarize=15)
 		# test_z = tf.Print(test_z, [test_z[0]], summarize=20)
 
 		self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
@@ -181,6 +184,11 @@ class Machine(object):
 		for part in self.variable_parts:
 			part.variable_restore(self.sess)
 
+		print('Get_Params!')
+		self.params = []
+		for va in tf.trainable_variables():
+			self.params.append(va)
+
 		print('Model Started!')
 
 	def get_args(self):
@@ -217,35 +225,30 @@ class Machine(object):
 		# mask = np.zeros(1)
 		td_map = {self.ppo.act_model.S:state}
 		td_map[self.test_raw_image] = np.array([obs[0]])
-		td_map[self.test_speed] = np.array([[obs[1]]])
+		# td_map[self.test_speed] = np.array([[obs[1]]])
 
 		return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.test_vae_loss.recon], td_map)
 
 
 	def value(self, obs, state, action):
 		# mask = np.zeros(1)
-		td_map = {self.ppo.act_model.S:state, self.ppo.act_model.a_z: [action]}
+		if type(action) == int:
+			action = [action]
+		td_map = {self.ppo.act_model.S:state, self.ppo.act_model.a_z: action}
 		td_map[self.test_raw_image] = np.array([obs[0]])
-		td_map[self.test_speed] = np.array([[obs[1]]])
+		# td_map[self.test_speed] = np.array([[obs[1]]])
 		return self.sess.run([self.ppo.act_model.a_z, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogpz, self.test_vae_loss.recon], td_map)
 
 	def train(self, inputs, global_step):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = inputs
 
-		# print(obs.shape)
-		# print(actions.shape)
-		# print(values.shape)
-		# print(neglogpacs.shape)
-		# print(rewards.shape)
-		# print(vaerecons.shape)
-		# print(states.shape)
 
 		values = np.squeeze(values, 1)
 		neglogpacs = np.squeeze(neglogpacs, 1)
 		# rewards = np.squeeze(rewards, 1)
 
 		raw_image = np.array([ob[0] for ob in obs])
-		speed = np.array([[ob[1]] for ob in obs])
+		# speed = np.array([[ob[1]] for ob in obs])
 
 		# print(raw_image.shape)
 		# print(speed.shape)
@@ -263,9 +266,9 @@ class Machine(object):
 		td_map[self.ppo.std_mask] = manual
 
 		td_map[self.raw_image] = raw_image
-		td_map[self.speed] = speed
+		# td_map[self.speed] = speed
 		td_map[self.test_raw_image] = [raw_image[0]]
-		td_map[self.test_speed] = [speed[0]]
+		# td_map[self.test_speed] = [speed[0]]
 
 		summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
 		self.writer.add_summary(summary, global_step)
@@ -280,12 +283,13 @@ class Machine(object):
 
 
 TRAIN_EPOCH = 15
-BATCH_SIZE = 128
+BATCH_SIZE = 8
+global_step = 0
+
 
 if __name__ == '__main__':
 	rospy.init_node('trainer_candy')
 	machine = Machine()
-	global_step = 0
 
 	def calculate_difficulty(reward, vaerecon):
 		return 1
@@ -297,7 +301,7 @@ if __name__ == '__main__':
 		batch = []
 		difficulty = []
 		for i in range(l):
-			batch.append([])
+			batch.append([obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i]])
 			difficulty.append(calculate_difficulty(rewards[i], vaerecons[i]))
 		# print(self.rewards)
 		# print(self.values)
@@ -318,6 +322,7 @@ if __name__ == '__main__':
 				tbatch.append(batch[i])
 			tra_batch = [np.array([t[i] for t in tbatch]) for i in range(9)]
 			# tra_batch = [np.array([t[i] for t in tbatch]) for i in range(7)]
+			global global_step
 			machine.train(tra_batch, global_step)
 			global_step += 1
 
@@ -326,9 +331,17 @@ if __name__ == '__main__':
 		rospy.wait_for_service('update_weights')
 		try:
 			update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)
-			update_weights('')
+
+			param = []
+			for each in machine.params:
+				param.append(np.array(each.eval(session=machine.sess)))
+			param = np.array(param)
+
+			outmsg = msgpack.packb(param, use_bin_type=True)
+			update_weights(outmsg)
+
 		except rospy.ServiceException as e:
 			print("Service call failed: %s" % e)
 
-	sub = rospy.Subscriber('/train_data', String, memory_training, queue_size=10)
+	sub = rospy.Subscriber('/train_data', String, memory_training, queue_size=1)
 	rospy.spin()

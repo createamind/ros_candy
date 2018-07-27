@@ -3,10 +3,10 @@ c3d_encoder:
     learning_rate: 0.00000000000001
     weight_decay: 0.00000000000001
 vae:
-    learning_rate: 0.0002
+    learning_rate: 0.0005
     weight_decay: 0.001
 ppo:
-    learning_rate: 0.003
+    learning_rate: 0.001
     weight_decay: 0.001
 raw_image:
     learning_rate: 0.00000000000001
@@ -33,7 +33,7 @@ transition:
     learning_rate: 0.00001
     weight_decay: 0.003
 imitation_coefficient: 0.2
-batch_size: 128
+batch_size: 8
 x_dim: 320
 y_dim: 320
 name: Martin D'vloper

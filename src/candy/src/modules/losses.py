@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 import tensorflow as tf
 
 class MSELoss:
@@ -12,10 +13,11 @@ class MSELoss:
 		# self.label = tf.Print(self.label, [self.label])
 		# self.predict = tf.Print(self.predict, [self.predict])
 		# tf.Print(self.name, [self.name])
-		if self.name == 'raw_image':
-			tlabel = tf.cast((self.predict + 1) * 127, tf.int32)
-			tf.summary.image("raw_image", tlabel)
-
+		# if self.name == 'raw_image':
+		# 	tlabel = tf.cast((self.predict + 1) * 127, tf.int32)
+		# 	tf.summary.image("raw_image", tlabel)
+		print(self.label)
+		print(self.predict)
 		loss = tf.reduce_mean(tf.losses.mean_squared_error(self.label, self.predict))
 		
 		tf.summary.scalar(self.name + 'loss', loss)
