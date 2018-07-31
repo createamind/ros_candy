@@ -32,8 +32,8 @@ policy:
 transition:
     learning_rate: 0.00001
     weight_decay: 0.003
-imitation_coefficient: 0.2
-batch_size: 64
+imitation_coefficient: 0.9
+batch_size: 8
 x_dim: 320
 y_dim: 320
 name: Martin D'vloper

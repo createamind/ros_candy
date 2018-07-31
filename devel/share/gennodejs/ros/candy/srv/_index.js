@@ -1,12 +1,12 @@
 
 "use strict";
 
+let Step = require('./Step.js')
 let UpdateWeights = require('./UpdateWeights.js')
 let Value = require('./Value.js')
-let Step = require('./Step.js')
 
 module.exports = {
+  Step: Step,
   UpdateWeights: UpdateWeights,
   Value: Value,
-  Step: Step,
 };
