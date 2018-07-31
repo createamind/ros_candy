@@ -14,7 +14,7 @@ from modules.networks import MLP
 from modules.vae import VAE, VAELoss
 
 from modules.ppo import PPO, LstmPolicy
-
+import random
 import tensorflow as tf
 import numpy as np
 import yaml
@@ -152,7 +152,7 @@ class Machine(object):
 
 		# self.loss_parts = self.depth_decoder_loss.inference() +self.raw_decoder_loss.inference() +self.seg_decoder_loss.inference()
 		
-		self.loss_parts = self.vae_loss.inference() + self.ppo.loss
+		self.loss_parts = 10 * self.vae_loss.inference() + self.ppo.loss
 		# self.loss_parts = self.raw_decoder_loss.inference()
 				
 		# weight_decay_loss = tf.reduce_mean(tf.get_collection('weightdecay_losses'))
@@ -282,8 +282,8 @@ class Machine(object):
 
 
 
-TRAIN_EPOCH = 5
-BATCH_SIZE = 8
+TRAIN_EPOCH = 50
+BATCH_SIZE = 16
 global_step = 0
 
 
@@ -292,7 +292,7 @@ if __name__ == '__main__':
 	machine = Machine()
 
 	def calculate_difficulty(reward, vaerecon):
-		return 1
+		return vaerecon
 
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
@@ -309,9 +309,9 @@ if __name__ == '__main__':
 		difficulty = np.array(difficulty)
 		print(difficulty[-20:])
 		def softmax(x):
-			x = np.clip(x, 1e-3, 1)
+			x = np.clip(x, 1e-3, 10)
 			return np.exp(x) / np.sum(np.exp(x), axis=0)
-		difficulty = softmax(difficulty * 5)
+		difficulty = softmax(difficulty * 40)
 		print(difficulty[-20:])
 		print("Memory Extraction Done.")
 
@@ -328,19 +328,20 @@ if __name__ == '__main__':
 
 		machine.save()
 
-		rospy.wait_for_service('update_weights')
-		try:
-			update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)
+		if random.randint(1,10000) == 1:
+			rospy.wait_for_service('update_weights')
+			try:
+				update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)
 
-			param = []
-			for each in machine.params:
-				param.append(np.array(each.eval(session=machine.sess)))
-			# param = np.array(param)
-			outmsg = msgpack.packb(param, use_bin_type=True)
-			update_weights(outmsg)
+				param = []
+				for each in machine.params:
+					param.append(np.array(each.eval(session=machine.sess)))
+				# param = np.array(param)
+				outmsg = msgpack.packb(param, use_bin_type=True)
+				update_weights(outmsg)
 
-		except rospy.ServiceException as e:
-			print("Service call failed: %s" % e)
+			except rospy.ServiceException as e:
+				print("Service call failed: %s" % e)
 
 	sub = rospy.Subscriber('/train_data', String, memory_training, queue_size=1)
 	rospy.spin()

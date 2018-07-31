@@ -55,14 +55,14 @@ class VAE():
 
 	def inference(self):
 
-		timage = tf.cast((self.x + 1) * 128, tf.uint8)
+		timage = tf.cast((tf.clip_by_value(self.x, -1, 1) + 1) * 127, tf.uint8)
 		tf.summary.image("raw_image_real", timage[:,:,:,:3])
 		# tf.summary.image("raw_image_real", timage[:,:,:,4:])
 
 		mean, logsigma = self.encoder(self.x)
 		recon_x = self.decoder(mean, logsigma)
 
-		timage = tf.cast((recon_x + 1) * 128, tf.uint8)
+		timage = tf.cast((tf.clip_by_value(recon_x, -1, 1) + 1) * 127, tf.uint8)
 		tf.summary.image("raw_image_recon", timage[:,:,:,:3])
 		# tf.summary.image("raw_image_recon", timage[:,:,:,4:])
 
