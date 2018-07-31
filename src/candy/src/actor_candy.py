@@ -175,6 +175,9 @@ class Machine(object):
 		self.sess = tf.Session(config = config)
 		self.writer = tf.summary.FileWriter('logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), self.sess.graph)
 
+
+		with tf.Graph().as_default() as g:
+			tf.Graph.finalize(g)
 		self.sess.run(tf.global_variables_initializer())
 
 		print('Restoring!')

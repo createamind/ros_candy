@@ -56,7 +56,7 @@ WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
 MINI_WINDOW_WIDTH = 200
 MINI_WINDOW_HEIGHT = 200
-BUFFER_LIMIT = 258
+BUFFER_LIMIT = 386
 
 
 class Carla_Wrapper(object):
@@ -350,6 +350,19 @@ class WrapperCandy():
 		image = cv_image[...,::-1]
 		self.image = image
 
+	def train_image_load(self):
+		PATH = '/data/forvae'
+		import os
+		from glob import glob
+		result = sorted([y for x in os.walk(PATH) for y in glob(os.path.join(x[0], '*.jpg'))])
+		print(len(result))
+		for _ in range(1000000):
+			for v in result:
+				image = cv2.imread(v)
+				image = cv2.resize(image,(320,320))
+				image = image[...,::-1]
+				yield image
+
 		
 if __name__ == '__main__':
 	rospy.init_node('wrapper_candy')
@@ -358,6 +371,9 @@ if __name__ == '__main__':
 	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.publisher)
 
 	rate = rospy.Rate(10) # 10hz
+	image_loader = wrapper_candy.train_image_load()
 	while not rospy.is_shutdown():
+		wrapper_candy.image = image_loader.next()
+		# print(wrapper_candy.image.shape)
 		carla_game.execute()
 		rate.sleep()
