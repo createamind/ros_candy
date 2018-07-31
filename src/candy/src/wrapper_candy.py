@@ -56,7 +56,7 @@ WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
 MINI_WINDOW_WIDTH = 200
 MINI_WINDOW_HEIGHT = 200
-BUFFER_LIMIT = 258
+BUFFER_LIMIT = 17
 
 
 class Carla_Wrapper(object):
@@ -192,7 +192,7 @@ class CarlaGame(object):
 		self.should_display = True
 		random.seed(datetime.datetime.now())
 		self.manual = True
-		self.manual_control = (random.randint(1,1000) == 1)
+		self.manual_control = True
 		self.cnt = 0
 		self.endnow = False
 		self.canreplay = True
@@ -226,7 +226,6 @@ class CarlaGame(object):
 			return
 
 		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, self.manual])
-
 		if type(model_control) != int:
 			model_control = model_control[0]
 		print(control)
@@ -334,7 +333,7 @@ class WrapperCandy():
 	def __init__(self):
 		self._cv_bridge = CvBridge()
 
-		self._sub = rospy.Subscriber('/usb_cam/image_raw', Image, self.load_image, queue_size=1)
+		self._sub = rospy.Subscriber('/camera/image_raw', Image, self.load_image, queue_size=1)
 		self.publisher = rospy.Publisher('/control', Int16, queue_size=1)
 		self.image = None
 
@@ -346,6 +345,7 @@ class WrapperCandy():
 	def load_image(self, image_msg):
 		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
 		cv_image = cv2.resize(cv_image,(320,320))
+		cv_image = cv2.flip(cv_image, -1)
 		# print(cv_image)
 		image = cv_image[...,::-1]
 		self.image = image
