@@ -152,7 +152,7 @@ class Machine(object):
 
 		# self.loss_parts = self.depth_decoder_loss.inference() +self.raw_decoder_loss.inference() +self.seg_decoder_loss.inference()
 		
-		self.loss_parts = self.vae_loss.inference() + self.ppo.loss
+		self.loss_parts = 4 * self.vae_loss.inference() + self.ppo.loss
 		# self.loss_parts = self.raw_decoder_loss.inference()
 				
 		# weight_decay_loss = tf.reduce_mean(tf.get_collection('weightdecay_losses'))
@@ -174,7 +174,7 @@ class Machine(object):
 
 		self.merged = tf.summary.merge_all()
 		self.sess = tf.Session(config = config)
-		self.writer = tf.summary.FileWriter('logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), self.sess.graph)
+		self.writer = tf.summary.FileWriter('/tmp/logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), self.sess.graph)
 
 
 		self.sess.run(tf.global_variables_initializer())
@@ -283,7 +283,7 @@ class Machine(object):
 
 
 TRAIN_EPOCH = 50
-BATCH_SIZE = 16
+BATCH_SIZE = 64
 global_step = 0
 
 
