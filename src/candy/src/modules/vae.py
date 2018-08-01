@@ -66,7 +66,7 @@ class VAE():
 		tf.summary.image("raw_image_recon", timage[:,:,:,:3])
 		# tf.summary.image("raw_image_recon", timage[:,:,:,4:])
 
-		
+		 
 		self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name))
 
 		return recon_x, mean, logsigma

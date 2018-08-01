@@ -255,7 +255,7 @@ if __name__ == '__main__':
 		param = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
 		machine.update_weights(param)
 		return ''
-
+ 
 	_ = rospy.Service('model_step', Step, step)
 	_ = rospy.Service('model_value', Value, value)
 	_ = rospy.Service('update_weights', UpdateWeights, update_weights)

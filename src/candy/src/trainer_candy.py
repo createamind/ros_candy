@@ -151,8 +151,8 @@ class Machine(object):
 		# 			self.raw_decoder_loss.inference() + self.seg_decoder_loss.inference() + self.policy_loss.inference()
 
 		# self.loss_parts = self.depth_decoder_loss.inference() +self.raw_decoder_loss.inference() +self.seg_decoder_loss.inference()
-		
-		self.loss_parts = 4 * self.vae_loss.inference() + self.ppo.loss
+		 
+		self.loss_parts = 5 * self.vae_loss.inference() + self.ppo.loss
 		# self.loss_parts = self.raw_decoder_loss.inference()
 				
 		# weight_decay_loss = tf.reduce_mean(tf.get_collection('weightdecay_losses'))
@@ -292,7 +292,7 @@ if __name__ == '__main__':
 	machine = Machine()
 
 	def calculate_difficulty(reward, vaerecon):
-		return vaerecon
+		return 1
 
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
@@ -301,6 +301,8 @@ if __name__ == '__main__':
 		batch = []
 		difficulty = []
 		for i in range(l):
+			# obs[i] = [ np.concatenate([obs[i][j][:,:,:3], np.zeros([320,320,1]), obs[i][j][:,:,3:6], np.zeros([320,320,1])], axis=2) for j in range(len(obs[i]))]
+			# print(obs[i][0].shape)
 			batch.append([obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i]])
 			difficulty.append(calculate_difficulty(rewards[i], vaerecons[i]))
 		# print(self.rewards)
