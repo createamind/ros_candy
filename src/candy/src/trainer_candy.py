@@ -152,7 +152,7 @@ class Machine(object):
 
 		# self.loss_parts = self.depth_decoder_loss.inference() +self.raw_decoder_loss.inference() +self.seg_decoder_loss.inference()
 		
-		self.loss_parts = 10 * self.vae_loss.inference() + self.ppo.loss
+		self.loss_parts = self.vae_loss.inference() + self.ppo.loss
 		# self.loss_parts = self.raw_decoder_loss.inference()
 				
 		# weight_decay_loss = tf.reduce_mean(tf.get_collection('weightdecay_losses'))

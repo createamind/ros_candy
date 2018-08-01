@@ -9,7 +9,6 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-
 from candy.srv import Step, Value, UpdateWeights
 
 import msgpack
@@ -113,6 +112,7 @@ class Carla_Wrapper(object):
 		
 		if std_control == 0:
 			manual = False
+			std_control = 1
 		return obs, reward, control, std_control - 1, manual
 		
 
@@ -315,11 +315,11 @@ class CarlaGame(object):
 		# 	cod = 8
 
 		cod = 0
-		if steer == -1 and th == 1:
+		if steer == -1 and th == 0:
 			cod = 1
 		elif steer == 0 and th == 1:
 			cod = 2
-		elif steer == 1 and th == 1:
+		elif steer == 1 and th == 0:
 			cod = 3
 		elif steer == 0 and th == -1:
 			cod = 4
