@@ -22,7 +22,7 @@ class LstmPolicy(object):
 		nenv = nbatch // nsteps
 		self.args = args
 		self.name = name
-		self.pdtype = make_pdtype(Discrete(13))
+		self.pdtype = make_pdtype(Discrete(4))
 		# X, processed_x = observation_input(ob_space, nbatch)
 
 		# X = tf.placeholder(tf.float32, [nbatch, HIDDEN])
@@ -36,7 +36,7 @@ class LstmPolicy(object):
 
 			o, snew = cell(h, S)
 
-			h5 = tf.layers.dense(o, 13, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
+			h5 = tf.layers.dense(o, 4, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
 			vf = tf.layers.dense(o, 1, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
 			
 			# h5 = tf.Print(h5, [h5], summarize=15)
