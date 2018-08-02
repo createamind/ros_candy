@@ -192,7 +192,7 @@ class CarlaGame(object):
 		self.should_display = True
 		random.seed(datetime.datetime.now())
 		self.manual = True
-		self.manual_control = True
+		self.manual_control = False
 		self.cnt = 0
 		self.endnow = False
 		self.canreplay = True
@@ -229,7 +229,7 @@ class CarlaGame(object):
 		if type(model_control) != int:
 			model_control = model_control[0]
 		print(control)
-		print(model_control)
+		print(model_control + 1)
 
 		if self.manual_control:
 			self.publisher.publish(control)
