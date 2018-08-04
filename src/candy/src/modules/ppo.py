@@ -10,7 +10,7 @@ from gym.spaces import Box, Discrete, Tuple
 from modules import policies
 # from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm
 from modules.distributions import make_pdtype
-
+import sys
 from tensorflow.contrib import rnn
 
 HIDDEN = 15
@@ -184,8 +184,7 @@ class PPO(object):
 
 	def variable_restore(self, sess):
 
-		model_filename = os.path.join("save", self.name)
-
+		model_filename = os.path.join(sys.path[0], "save/", self.name)
 		# if os.path.isfile(model_filename + '.meta'):
 		# 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
 		# 	self.saver.restore(sess, model_filename)

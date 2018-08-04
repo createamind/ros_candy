@@ -21,6 +21,8 @@ import yaml
 from tqdm import tqdm
 import datetime
 import functools
+import sys
+import os
 
 from candy.srv import Step, Value, UpdateWeights
 from std_msgs.msg import String
@@ -192,7 +194,7 @@ class Machine(object):
 		print('Model Started!')
 
 	def get_args(self):
-		with open("args.yaml", 'r') as f:
+		with open(os.path.join(sys.path[0], "args.yaml"), 'r') as f:
 			try:
 				t = yaml.load(f)
 				return t
@@ -271,13 +273,14 @@ class Machine(object):
 		# td_map[self.test_speed] = [speed[0]]
 
 		summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
-		self.writer.add_summary(summary, global_step)
+		if global_step % 100 == 0:
+			self.writer.add_summary(summary, global_step)
 
 
 	def save(self):
 		print('Start Saving')
 		for i in self.variable_parts2:
-			i.saver.save(self.sess, './save/' + str(i.name), global_step=None, write_meta_graph=False, write_state=False)
+			i.saver.save(self.sess, os.path.join(sys.path[0], 'save', str(i.name)), global_step=None, write_meta_graph=False, write_state=False)
 		print('Saving Done.')
 
 

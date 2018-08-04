@@ -18,6 +18,7 @@ from modules.ppo import PPO, LstmPolicy
 import tensorflow as tf
 import numpy as np
 import yaml
+import os
 import datetime
 import functools
 import msgpack
@@ -194,7 +195,7 @@ class Machine(object):
 		print('Model Started!')
 
 	def get_args(self):
-		with open("args.yaml", 'r') as f:
+		with open(os.path.join(sys.path[0], "args.yaml"), 'r') as f:
 			try:
 				t = yaml.load(f)
 				return t
