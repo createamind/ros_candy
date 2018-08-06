@@ -2,7 +2,7 @@
 from __future__ import print_function, absolute_import, division
 import rospy
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int16, String
+from std_msgs.msg import Int16, String, Float32
 from cv_bridge import CvBridge
 
 import cv2
@@ -99,17 +99,17 @@ class Carla_Wrapper(object):
 
 	def pre_process(self, inputs, refresh=False):
 
-		image, control, reward, std_control, manual = inputs
+		image, control, reward, std_control, manual, speed, steer = inputs
 		image = image.astype(np.float32) / 128 - 1
 
 		nowframe = image
 		if self.last_frame is None:
 			self.last_frame = nowframe
-		obs = np.concatenate([self.last_frame, nowframe], 2)
+		frame = np.concatenate([self.last_frame, nowframe], 2)
 		if refresh:
 			self.last_frame = nowframe
 
-		obs = (obs, )
+		obs = (frame, speed, steer)
 		
 		if std_control == 0:
 			manual = False
@@ -185,7 +185,7 @@ class Carla_Wrapper(object):
 		return 0 # do nothing
 
 class CarlaGame(object):
-	def __init__(self, carla_wrapper, image_getter, publisher):
+	def __init__(self, carla_wrapper, image_getter, speed_getter, steer_getter, status_getter, throttle_publisher, steer_publisher):
 		self._timer = None
 		self._display = None
 		self._main_image = None
@@ -199,8 +199,14 @@ class CarlaGame(object):
 		pygame.init()
 
 		self.image_getter = image_getter
-		self.publisher = publisher
+		self.throttle_publisher = throttle_publisher
+		self.steer_publisher = steer_publisher
 		self.carla_wrapper = carla_wrapper
+
+
+		self.speed_getter = speed_getter
+		self.steer_getter = steer_getter
+		self.status_getter = status_getter
 
 		self._display = pygame.display.set_mode(
 			(WINDOW_WIDTH, WINDOW_HEIGHT),
@@ -225,25 +231,30 @@ class CarlaGame(object):
 		elif control is None:
 			return
 
-		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, self.manual])
-		if type(model_control) != int:
+		speed = self.speed_getter()
+		steer = self.steer_getter()
+		# status = self.status_getter()
+		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, self.manual, speed, steer])
+		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
 		print(control)
 		print(model_control)
 
 		if self.manual_control:
-			self.publisher.publish(control)
+			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
+			self.steer_publisher.publish(max(-1.0, min(1.0, control[1])))
 		else:
-			self.publisher.publish(model_control)
+			self.throttle_publisher.publish(max(-1.0, min(1.0, model_control[0])))
+			self.steer_publisher.publish(max(-1.0, min(1.0, model_control[1])))
 
 		if self.endnow or (self.canreplay and self.cnt > BUFFER_LIMIT):
-			self.carla_wrapper.post_process([self._main_image, model_control, 0, control, self.manual], self.cnt)
+			self.carla_wrapper.post_process([self._main_image, model_control, -1 if self.endnow else 0, control, self.manual, speed, steer], self.cnt)
 			self.cnt = 0
 			self.endnow = False
 		else:
 			self.cnt += 1
 			self.endnow = False
-			self.carla_wrapper.update([self._main_image, model_control, reward, control, self.manual])
+			self.carla_wrapper.update([self._main_image, model_control, reward, control, self.manual, speed, steer])
 		
 	def _get_keyboard_control(self, keys):
 		th = 0
@@ -296,25 +307,25 @@ class CarlaGame(object):
 		if keys[K_9]:
 			reward = 1
 
-		cod = 0
-		if steer == -1 and th == 1:
-			cod = 1
-		elif steer == 0 and th == 1:
-			cod = 2
-		elif steer == 1 and th == 1:
-			cod = 3
-		elif steer == -1 and th == 0:
-			cod = 4
-		elif steer == 1 and th == 0:
-			cod = 5
-		elif steer == -1 and th == -1:
-			cod = 6
-		elif steer == 0 and th == -1:
-			cod = 7
-		elif steer == 1 and th == -1:
-			cod = 8
+		# cod = 0
+		# if steer == -1 and th == 1:
+		# 	cod = 1
+		# elif steer == 0 and th == 1:
+		# 	cod = 2
+		# elif steer == 1 and th == 1:
+		# 	cod = 3
+		# elif steer == -1 and th == 0:
+		# 	cod = 4
+		# elif steer == 1 and th == 0:
+		# 	cod = 5
+		# elif steer == -1 and th == -1:
+		# 	cod = 6
+		# elif steer == 0 and th == -1:
+		# 	cod = 7
+		# elif steer == 1 and th == -1:
+		# 	cod = 8
 			
-		return cod, reward
+		return [th, steer], reward
 
 	def _on_render(self):
 		if self.should_display == False:
@@ -334,13 +345,44 @@ class WrapperCandy():
 		self._cv_bridge = CvBridge()
 
 		self._sub = rospy.Subscriber('/camera/image_raw', Image, self.load_image, queue_size=1)
-		self.publisher = rospy.Publisher('/control', Int16, queue_size=1)
+		self._sub2 = rospy.Subscriber('/current_speed', Float32, self.load_speed, queue_size=1)
+		self._sub3 = rospy.Subscriber('/current_steer', Float32, self.load_steer, queue_size=1)
+
+		self.throttle_publisher = rospy.Publisher('/ferrari_throttle', Float32, queue_size=1)
+		self.steer_publisher = rospy.Publisher('/ferrari_steer', Float32, queue_size=1)
 		self.image = None
+		self.speed = 0
+		self.steer = 0
 
 	def image_getter(self):
 		def func():
 			return self.image
 		return func
+
+	def speed_getter(self):
+		def func():
+			return self.speed / 15.0 - 1
+		return func
+
+	def steer_getter(self):
+		def func():
+			return self.steer / 540.0
+		return func
+
+
+	def load_speed(self, msg):
+		self.speed = msg.data
+
+	def load_steer(self, msg):
+		self.steer = msg.data
+
+	def load_steer(self, msg):
+		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		cv_image = cv2.resize(cv_image,(320,320))
+		cv_image = cv2.flip(cv_image, -1)
+		# print(cv_image)
+		image = cv_image[...,::-1]
+		self.image = image
 
 	def load_image(self, image_msg):
 		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
@@ -368,7 +410,7 @@ if __name__ == '__main__':
 	rospy.init_node('wrapper_candy')
 	wrapper_candy = WrapperCandy()
 	carla_wrapper = Carla_Wrapper()
-	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.publisher)
+	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), None, wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
 
 	rate = rospy.Rate(10) # 10hz
 	# image_loader = wrapper_candy.train_image_load()
