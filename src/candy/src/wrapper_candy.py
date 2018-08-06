@@ -376,14 +376,6 @@ class WrapperCandy():
 	def load_steer(self, msg):
 		self.steer = msg.data
 
-	def load_steer(self, msg):
-		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
-		cv_image = cv2.resize(cv_image,(320,320))
-		cv_image = cv2.flip(cv_image, -1)
-		# print(cv_image)
-		image = cv_image[...,::-1]
-		self.image = image
-
 	def load_image(self, image_msg):
 		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
 		cv_image = cv2.resize(cv_image,(320,320))
