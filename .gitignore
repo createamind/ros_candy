@@ -1,4 +1,5 @@
 save/
+logs/
 src/candy/src/logs
 .catkin*
 .save/

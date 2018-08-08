@@ -12,7 +12,7 @@
   </node> -->
 
   <!-- <node pkg="usb_cam" name="usb_cam" type="usb_cam_node"/> -->
-  <node pkg="candy" name="wrapper_candy" type="wrapper_candy4.py"/>
+  <node pkg="candy" name="wrapper_candy" type="wrapper_candy.py"/>
   <node pkg="candy" name="trainer_candy" type="trainer_candy.py">
     <env name="CUDA_VISIBLE_DEVICES" value="0"/>
   </node>
