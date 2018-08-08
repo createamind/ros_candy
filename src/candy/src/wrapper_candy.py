@@ -56,7 +56,7 @@ WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
 MINI_WINDOW_WIDTH = 200
 MINI_WINDOW_HEIGHT = 200
-BUFFER_LIMIT = 17
+BUFFER_LIMIT = 20
 
 
 class Carla_Wrapper(object):
@@ -239,7 +239,7 @@ class CarlaGame(object):
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
 		print(control)
-		print(model_control)
+		# print(model_control)
 
 		if self.manual_control:
 			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))

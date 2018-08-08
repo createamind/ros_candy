@@ -47,7 +47,7 @@ class LstmPolicy(object):
 
 		v0 = vf[:, 0]
 		a0 = self.pd.sample()
-		a0 = tf.Print(a0, [a0, self.pi], summarize=10)
+		# a0 = tf.Print(a0, [a0, self.pi], summarize=10)
 		a_z = tf.placeholder(tf.float32, [nbatch, 2])
 
 		neglogp0 = self.pd.neglogp(a0)
