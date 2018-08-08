@@ -111,8 +111,8 @@ class Carla_Wrapper(object):
 
 		obs = (frame, speed)
 		
-		if std_control == 0:
-			manual = False
+		# if std_control == 0:
+		# 	manual = False
 		return obs, reward, control, std_control, manual
 		
 
@@ -185,7 +185,7 @@ class Carla_Wrapper(object):
 		return 0 # do nothing
 
 class CarlaGame(object):
-	def __init__(self, carla_wrapper, image_getter, speed_getter, steer_getter, brake_throttle_getter, throttle_publisher, steer_publisher):
+	def __init__(self, carla_wrapper, image_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
 		self._timer = None
 		self._display = None
 		self._main_image = None
@@ -207,6 +207,7 @@ class CarlaGame(object):
 		self.speed_getter = speed_getter
 		self.steer_getter = steer_getter
 		self.brake_throttle_getter = brake_throttle_getter
+		self.is_auto_getter = is_auto_getter
 
 		self._display = pygame.display.set_mode(
 			(WINDOW_WIDTH, WINDOW_HEIGHT),
@@ -234,8 +235,10 @@ class CarlaGame(object):
 		speed = self.speed_getter()
 		steer = self.steer_getter()
 		brake_throttle = self.brake_throttle_getter()
+		manual = not self.is_auto_getter()
+
 		control = [brake_throttle, steer]
-		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, self.manual, speed])
+		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, manual, speed])
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
 		print(control)
@@ -249,13 +252,13 @@ class CarlaGame(object):
 			self.steer_publisher.publish(max(-1.0, min(1.0, model_control[1])))
 
 		if self.endnow or (self.canreplay and self.cnt > BUFFER_LIMIT):
-			self.carla_wrapper.post_process([self._main_image, model_control, -1 if self.endnow else 0, control, self.manual, speed], self.cnt)
+			self.carla_wrapper.post_process([self._main_image, model_control, -1 if self.endnow else 0, control, manual, speed], self.cnt)
 			self.cnt = 0
 			self.endnow = False
 		else:
 			self.cnt += 1
 			self.endnow = False
-			self.carla_wrapper.update([self._main_image, model_control, reward, control, self.manual, speed])
+			self.carla_wrapper.update([self._main_image, model_control, reward, control, manual, speed])
 		
 	def _get_keyboard_control(self, keys):
 		th = 0
@@ -355,6 +358,7 @@ class WrapperCandy():
 		self.image = None
 		self.speed = 0
 		self.steer = 0
+		self.is_auto = True
 		self.brake_throttle = 0
 
 	def image_getter(self):
@@ -377,9 +381,17 @@ class WrapperCandy():
 			return self.brake_throttle
 		return func
 
+	def is_auto_getter(self):
+		def func():
+			return self.is_auto
+		return func
+
 
 	def load_speed(self, msg):
 		self.speed = msg.data
+
+	def load_is_auto(self, msg):
+		self.is_auto = False if msg.data == 0 else True
 
 	def load_steer(self, msg):
 		self.steer = msg.data
@@ -413,7 +425,7 @@ if __name__ == '__main__':
 	rospy.init_node('wrapper_candy')
 	wrapper_candy = WrapperCandy()
 	carla_wrapper = Carla_Wrapper()
-	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
+	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
 
 	rate = rospy.Rate(10) # 10hz
 	# image_loader = wrapper_candy.train_image_load()
