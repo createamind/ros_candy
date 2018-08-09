@@ -345,7 +345,7 @@ class CarlaGame(object):
 
 
 class WrapperCandy():
-	def __init__(self):
+	def __init__(self, load_mode = False):
 		self._cv_bridge = CvBridge()
 
 		self._sub = rospy.Subscriber('/camera/image_raw', Image, self.load_image, queue_size=1)
@@ -355,6 +355,12 @@ class WrapperCandy():
 
 		self.throttle_publisher = rospy.Publisher('/ferrari_throttle', Float32, queue_size=1)
 		self.steer_publisher = rospy.Publisher('/ferrari_steer', Float32, queue_size=1)
+
+
+		self.all_publisher = rospy.Publisher('/wrapper_data', String, queue_size=1)
+		if load_mode:
+			self.all_loader = rospy.Subscriber('/wrapper_data', String, self.all_loader, queue_size=1)
+
 		self.image = None
 		self.speed = 0
 		self.steer = 0
@@ -420,10 +426,23 @@ class WrapperCandy():
 				image = image[...,::-1]
 				yield image
 
-		
+	def all_loader(self, msg):
+		self.image, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
+
+	def all_publisher(self):
+		msg = msgpack.packb([self.image, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
+		self.all_publisher.publish(msg)
+
 if __name__ == '__main__':
+	argparser = argparse.ArgumentParser('Wrapper')
+	argparser.add_argument(
+        '-l', '--load-rosbag-data',
+        action='store_true',
+        help='load rosbag data')
+    args = argparser.parse_args()
+
 	rospy.init_node('wrapper_candy')
-	wrapper_candy = WrapperCandy()
+	wrapper_candy = WrapperCandy(args.load_rosbag_data)
 	carla_wrapper = Carla_Wrapper()
 	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
 
@@ -432,5 +451,7 @@ if __name__ == '__main__':
 	while not rospy.is_shutdown():
 		# wrapper_candy.image = image_loader.next()
 		# print(wrapper_candy.image.shape)
+		if not args.load_rosbag_data:
+			wrapper_candy.all_publisher()
 		carla_game.execute()
 		rate.sleep()
