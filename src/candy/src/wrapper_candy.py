@@ -93,7 +93,7 @@ class Carla_Wrapper(object):
 
 		print(self.rewards[-20:])
 		print('Start Memory Replay')
-		self.memory_training()
+		# self.memory_training()
 		print('Memory Replay Done')
 
 
@@ -352,14 +352,15 @@ class WrapperCandy():
 		self._sub2 = rospy.Subscriber('/current_speed', Float32, self.load_speed, queue_size=1)
 		self._sub3 = rospy.Subscriber('/current_steer', Float32, self.load_steer, queue_size=1)
 		self._sub4 = rospy.Subscriber('/current_brake_throttle', Float32, self.load_brake_throttle, queue_size=1)
+		self._sub5 = rospy.Subscriber('/current_is_auto', Int16, self.load_is_auto, queue_size=1)
 
 		self.throttle_publisher = rospy.Publisher('/ferrari_throttle', Float32, queue_size=1)
 		self.steer_publisher = rospy.Publisher('/ferrari_steer', Float32, queue_size=1)
 
 
-		self.all_publisher = rospy.Publisher('/wrapper_data', String, queue_size=1)
+		self.all_pub = rospy.Publisher('/wrapper_data', String, queue_size=1)
 		if load_mode:
-			self.all_loader = rospy.Subscriber('/wrapper_data', String, self.all_loader, queue_size=1)
+			self.all_sub = rospy.Subscriber('/wrapper_data', String, self.all_loader, queue_size=1)
 
 		self.image = None
 		self.speed = 0
@@ -400,10 +401,10 @@ class WrapperCandy():
 		self.is_auto = False if msg.data == 0 else True
 
 	def load_steer(self, msg):
-		self.steer = msg.data
+		self.steer = max(min(1.0, msg.data),-1.0)
 
 	def load_brake_throttle(self, msg):
-		self.brake_throttle = msg.data
+		self.brake_throttle = max(min(1.0, msg.data),-1.0)
 
 	def load_image(self, image_msg):
 		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
@@ -431,15 +432,15 @@ class WrapperCandy():
 
 	def all_publisher(self):
 		msg = msgpack.packb([self.image, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
-		self.all_publisher.publish(msg)
+		self.all_pub.publish(msg)
 
 if __name__ == '__main__':
 	argparser = argparse.ArgumentParser('Wrapper')
 	argparser.add_argument(
-        '-l', '--load-rosbag-data',
-        action='store_true',
-        help='load rosbag data')
-    args = argparser.parse_args()
+		'-l', '--load-rosbag-data',
+		action='store_true',
+		help='load rosbag data')
+	args = argparser.parse_args()
 
 	rospy.init_node('wrapper_candy')
 	wrapper_candy = WrapperCandy(args.load_rosbag_data)
@@ -451,6 +452,7 @@ if __name__ == '__main__':
 	while not rospy.is_shutdown():
 		# wrapper_candy.image = image_loader.next()
 		# print(wrapper_candy.image.shape)
+		print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
 		if not args.load_rosbag_data:
 			wrapper_candy.all_publisher()
 		carla_game.execute()
