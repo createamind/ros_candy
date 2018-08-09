@@ -137,7 +137,7 @@ class PPO(object):
 		# clipfrac = tf.reduce_mean(tf.to_float(tf.greater(tf.abs(ratio - 1.0), CLIPRANGE)))
 		# loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
 
-		imitation_loss = tf.square(train_model.pi - self.std_action)
+		imitation_loss = tf.reduce_mean(tf.square(train_model.pi - self.std_action), 1)
 		imitation_loss = tf.reduce_mean(tf.boolean_mask(imitation_loss, self.std_mask))
 		imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
 		loss = 0 * loss + self.args['imitation_coefficient'] * imitation_loss
