@@ -192,7 +192,7 @@ class CarlaGame(object):
 		self.should_display = True
 		random.seed(datetime.datetime.now())
 		self.manual = True
-		self.manual_control = True
+		self.manual_control = False
 		self.cnt = 0
 		self.endnow = False
 		self.canreplay = True
@@ -241,8 +241,8 @@ class CarlaGame(object):
 		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, manual, speed])
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
-		print(control)
-		# print(model_control)
+		print(control, model_control)
+		print(manual)
 
 		if self.manual_control:
 			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
