@@ -56,7 +56,7 @@ WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
 MINI_WINDOW_WIDTH = 200
 MINI_WINDOW_HEIGHT = 200
-BUFFER_LIMIT = 20
+BUFFER_LIMIT = 200
 
 
 class Carla_Wrapper(object):
@@ -93,7 +93,7 @@ class Carla_Wrapper(object):
 
 		print(self.rewards[-20:])
 		print('Start Memory Replay')
-		# self.memory_training()
+		self.memory_training()
 		print('Memory Replay Done')
 
 
@@ -452,7 +452,7 @@ if __name__ == '__main__':
 	while not rospy.is_shutdown():
 		# wrapper_candy.image = image_loader.next()
 		# print(wrapper_candy.image.shape)
-		print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
+		# print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
 		if not args.load_rosbag_data:
 			wrapper_candy.all_publisher()
 		carla_game.execute()
