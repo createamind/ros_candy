@@ -294,7 +294,7 @@ class Machine(object):
 
 
 TRAIN_EPOCH = 20
-BATCH_SIZE = 16
+BATCH_SIZE = 128
 global_step = 0
 
 

@@ -241,8 +241,8 @@ class CarlaGame(object):
 		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, manual, speed])
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
-		print(control, model_control)
-		print(manual)
+		print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" %  (control[0], model_control[0], control[1], model_control[1]))
+		# print(manual)
 
 		if self.manual_control:
 			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
