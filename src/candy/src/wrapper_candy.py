@@ -242,7 +242,12 @@ class CarlaGame(object):
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
 		print(control, model_control)
-		print(manual)
+		if manual:
+			print("Human!")
+		else:
+			print("Model!")
+		# print(manual)
+		# print(self.manual_control)
 
 		if self.manual_control:
 			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
