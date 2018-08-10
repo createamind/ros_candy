@@ -142,8 +142,8 @@ class PPO(object):
 		imitation_loss = tf.square(tmd)
 		# tmd = tf.Print(tmd, [tmd], summarize=1000)
 		# self.std_action = tf.Print(self.std_action, [self.std_action], summarize=10)
-
 		# imitation_loss = tf.reduce_mean(tf.square(tmd), 1)
+
 		imitation_loss = tf.reduce_mean(tf.boolean_mask(imitation_loss, self.std_mask))
 		imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
 		loss = 0 * loss + self.args['imitation_coefficient'] * imitation_loss
