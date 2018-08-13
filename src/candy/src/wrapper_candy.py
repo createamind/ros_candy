@@ -354,8 +354,18 @@ class WrapperCandy():
 		self._sub4 = rospy.Subscriber('/current_brake_throttle', Float32, self.load_brake_throttle, queue_size=1)
 		self._sub5 = rospy.Subscriber('/current_is_auto', Int16, self.load_is_auto, queue_size=1)
 
+		self._sub6 = rospy.Subscriber('/current_brake_light', Int16, self.load_brake_light, queue_size=1)
+		self._sub7 = rospy.Subscriber('/current_left_turn_switch', Int16, self.load_left_turn_switch, queue_size=1)
+		self._sub8 = rospy.Subscriber('/current_right_turn_switch', Int16, self.load_right_turn_switch, queue_size=1)
+
 		self.throttle_publisher = rospy.Publisher('/ferrari_throttle', Float32, queue_size=1)
 		self.steer_publisher = rospy.Publisher('/ferrari_steer', Float32, queue_size=1)
+		self.light_publisher = rospy.Publisher('/ferrari_brake_light', Int16, queue_size=1)
+		self.left_turn_switch_publisher = rospy.Publisher('/ferrari_left_turn_switch', Int16, queue_size=1)
+		self.left_turn_switch_publisher = rospy.Publisher('/ferrari_right_turn_switch', Int16, queue_size=1)
+
+		
+		
 
 
 		self.all_pub = rospy.Publisher('/wrapper_data', String, queue_size=1)
@@ -367,6 +377,9 @@ class WrapperCandy():
 		self.steer = 0
 		self.is_auto = True
 		self.brake_throttle = 0
+		self.brake_light = 0
+		self.left_turn_switch = 0
+		self.right_turn_switch = 0
 
 	def image_getter(self):
 		def func():
@@ -392,6 +405,30 @@ class WrapperCandy():
 		def func():
 			return self.is_auto
 		return func
+
+	def brake_light_getter(self):
+		def func():
+			return self.brake_light
+		return func
+
+	def left_turn_switch_getter(self):
+		def func():
+			return self.left_turn_switch
+		return func
+	
+	def right_turn_switch_getter(self):
+		def func():
+			return self.right_turn_switch
+		return func
+
+	def load_right_turn_switch(self, msg):
+		self.right_turn_switch = msg.data
+
+	def load_left_turn_switch(self, msg):
+		self.left_turn_switch = msg.data
+
+	def load_brake_light(self, msg):
+		self.brake_light = msg.data
 
 
 	def load_speed(self, msg):
