@@ -27,7 +27,7 @@ class VAE():
 				x = tf.nn.relu(tf.layers.conv2d(x, 512, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				
 				x = tf.reshape(x, [-1, 51200])
-				z = tf.layers.dense(x, 30, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
+				z = tf.layers.dense(x, 200, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
 				
 				mean, logsigma = tf.split(z, 2, 1)
 

@@ -293,7 +293,7 @@ class Machine(object):
 
 
 
-TRAIN_EPOCH = 20
+TRAIN_EPOCH = 35
 BATCH_SIZE = 128
 global_step = 0
 
@@ -303,7 +303,7 @@ if __name__ == '__main__':
 	machine = Machine()
 
 	def calculate_difficulty(reward, vaerecon):
-		return 1
+		return vaerecon
 
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
@@ -322,9 +322,9 @@ if __name__ == '__main__':
 		difficulty = np.array(difficulty)
 		print(difficulty[-20:])
 		def softmax(x):
-			x = np.clip(x, 1e-3, 10)
+			x = np.clip(x, 1e-5, 1e5)
 			return np.exp(x) / np.sum(np.exp(x), axis=0)
-		difficulty = softmax(difficulty * 40)
+		difficulty = softmax(difficulty * 50)
 		print(difficulty[-20:])
 		print("Memory Extraction Done.")
 
@@ -341,7 +341,7 @@ if __name__ == '__main__':
 
 		machine.save()
 
-		if random.randint(1,10000) == 1:
+		if random.randint(1,1) == 1:
 			rospy.wait_for_service('update_weights')
 			try:
 				update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)

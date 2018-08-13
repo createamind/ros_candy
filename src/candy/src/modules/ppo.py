@@ -47,6 +47,7 @@ class LstmPolicy(object):
 
 		v0 = vf[:, 0]
 		a0 = self.pd.sample()
+		a0 = self.pi 
 		# a0 = tf.Print(a0, [a0, self.pi], summarize=10)
 		a_z = tf.placeholder(tf.float32, [nbatch, 2])
 
@@ -137,7 +138,13 @@ class PPO(object):
 		# clipfrac = tf.reduce_mean(tf.to_float(tf.greater(tf.abs(ratio - 1.0), CLIPRANGE)))
 		# loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
 
-		imitation_loss = tf.reduce_mean(tf.square(train_model.pi - self.std_action), 1)
+		tmd_steer = train_model.pi[:,1] - self.std_action[:,1]
+		tmd_thro = train_model.pi[:,0] - self.std_action[:,0]
+		imitation_loss = 40 * tf.square(tmd_steer) + tf.square(tmd_thro)
+		# tmd = tf.Print(tmd, [tmd], summarize=1000)
+		# self.std_action = tf.Print(self.std_action, [self.std_action], summarize=10)
+		# imitation_loss = tf.reduce_mean(tf.square(tmd), 1)
+
 		imitation_loss = tf.reduce_mean(tf.boolean_mask(imitation_loss, self.std_mask))
 		imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
 		loss = 0 * loss + self.args['imitation_coefficient'] * imitation_loss

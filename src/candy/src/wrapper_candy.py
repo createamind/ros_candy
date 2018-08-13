@@ -56,7 +56,7 @@ WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
 MINI_WINDOW_WIDTH = 200
 MINI_WINDOW_HEIGHT = 200
-BUFFER_LIMIT = 20
+BUFFER_LIMIT = 200
 
 
 class Carla_Wrapper(object):
@@ -93,7 +93,7 @@ class Carla_Wrapper(object):
 
 		print(self.rewards[-20:])
 		print('Start Memory Replay')
-		# self.memory_training()
+		self.memory_training()
 		print('Memory Replay Done')
 
 
@@ -192,7 +192,7 @@ class CarlaGame(object):
 		self.should_display = True
 		random.seed(datetime.datetime.now())
 		self.manual = True
-		self.manual_control = True
+		self.manual_control = False
 		self.cnt = 0
 		self.endnow = False
 		self.canreplay = True
@@ -241,8 +241,11 @@ class CarlaGame(object):
 		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, manual, speed])
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
-		print(control)
-		# print(model_control)
+		print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" %  (control[0], model_control[0], control[1], model_control[1]))
+		if manual:
+			print("Human!")
+		else:
+			print("Model!")
 
 		if self.manual_control:
 			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
@@ -489,7 +492,7 @@ if __name__ == '__main__':
 	while not rospy.is_shutdown():
 		# wrapper_candy.image = image_loader.next()
 		# print(wrapper_candy.image.shape)
-		print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
+		# print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
 		if not args.load_rosbag_data:
 			wrapper_candy.all_publisher()
 		carla_game.execute()
