@@ -102,13 +102,21 @@ class Carla_Wrapper(object):
 		image, control, reward, std_control, manual, speed = inputs
 		image = image.astype(np.float32) / 128 - 1
 
-		nowframe = image
-		if self.last_frame is None:
-			self.last_frame = nowframe
-		frame = np.concatenate([self.last_frame, nowframe], 2)
-		if refresh:
-			self.last_frame = nowframe
+		# nowframe = image
+		# if self.last_frame is None:
+		# 	self.last_frame = nowframe
+		# frame = np.concatenate([self.last_frame, nowframe], 2)
+		# if refresh:
+		# 	self.last_frame = nowframe
 
+		frame_10 = [image for i in range(10)]
+		for i in [1,2,3,4,5,6,7,8,9]:
+			frame_10[i-1] = frame_10[i]
+			frame_10[9] = image
+		
+		#将fanme_10拼起来
+		frame = np.concatenate([frame_10[0],frame_10[1],frame_10[2],frame_10[3],frame_10[4],frame_10[5],frame_10[6],frame_10[7],frame_10[8],frame_10[9]], 10)
+		
 		obs = (frame, speed)
 		
 		# if std_control == 0:
