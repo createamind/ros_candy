@@ -293,7 +293,7 @@ class Machine(object):
 
 
 
-TRAIN_EPOCH = 35
+TRAIN_EPOCH = 10
 BATCH_SIZE = 128
 global_step = 0
 
@@ -301,6 +301,7 @@ global_step = 0
 if __name__ == '__main__':
 	rospy.init_node('trainer_candy')
 	machine = Machine()
+	batch = []
 
 	def calculate_difficulty(reward, vaerecon):
 		return vaerecon
@@ -308,32 +309,33 @@ if __name__ == '__main__':
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 
+		if len(batch) > 1000:
+			batch = batch[:1000]
 		l = len(obs)
-		batch = []
-		difficulty = []
 		for i in range(l):
 			# obs[i] = [ np.concatenate([obs[i][j][:,:,:3], np.zeros([320,320,1]), obs[i][j][:,:,3:6], np.zeros([320,320,1])], axis=2) for j in range(len(obs[i]))]
 			# print(obs[i][0].shape)
-			batch.append([obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i]])
-			difficulty.append(calculate_difficulty(rewards[i], vaerecons[i]))
+			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i]]) )
 		# print(self.rewards)
 		# print(self.values)
 		# print(np.array(self.rewards) - np.array([i[0] for i in self.values]))
-		difficulty = np.array(difficulty)
-		print(difficulty[-20:])
-		def softmax(x):
-			x = np.clip(x, 1e-5, 1e5)
-			return np.exp(x) / np.sum(np.exp(x), axis=0)
-		difficulty = softmax(difficulty * 50)
-		print(difficulty[-20:])
+		batch = sorted(batch, reverse=True)
+		# difficulty = np.array(difficulty)
+		# print(difficulty[-20:])
+		# def softmax(x):
+		# 	x = np.clip(x, 1e-5, 1e5)
+		# 	return np.exp(x) / np.sum(np.exp(x), axis=0)
+		# difficulty = softmax(difficulty * 50)
+		# print(difficulty[-20:])
+
 		print("Memory Extraction Done.")
 
 		for _ in tqdm(range(TRAIN_EPOCH)):
-			roll = np.random.choice(len(difficulty), BATCH_SIZE, p=difficulty)
-			tbatch = []
-			for i in roll:
-				tbatch.append(batch[i])
-			tra_batch = [np.array([t[i] for t in tbatch]) for i in range(9)]
+			# roll = np.random.choice(len(difficulty), BATCH_SIZE, p=difficulty)
+			# tbatch = []
+			# for i in roll:
+			# 	tbatch.append(batch[i])
+			tra_batch = [np.array([t[1][i] for t in batch]) for i in range(9)]
 			# tra_batch = [np.array([t[i] for t in tbatch]) for i in range(7)]
 			global global_step
 			machine.train(tra_batch, global_step)
