@@ -27,7 +27,7 @@ class VAE():
 				x = tf.nn.relu(tf.layers.conv2d(x, 32, [4, 4], strides=(2, 2), padding='SAME', kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				
 				x = tf.reshape(x, [-1, 3200])
-				x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
+				# x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				z = tf.layers.dense(x, 128, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
 				
 				mean, logsigma = tf.split(z, 2, 1)
@@ -43,8 +43,7 @@ class VAE():
 		with tf.variable_scope(self.name, reuse=self.reuse) as _:
 			with tf.variable_scope('decoder', reuse=self.reuse) as _2:
 
-
-				x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
+				# x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 				x = tf.nn.relu(tf.layers.dense(x, 3200, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay'])))
 
 				x = tf.reshape(x, [-1, 10, 10, 32])
