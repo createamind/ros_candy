@@ -288,7 +288,7 @@ class Machine(object):
 	def save(self):
 		print('Start Saving')
 		for i in self.variable_parts2:
-			i.saver.save(self.sess, os.path.join(sys.path[0], 'save', str(i.name)), global_step=None, write_meta_graph=False, write_state=False)
+			i.saver.save(self.sess, os.path.join(sys.path[0], 'save2', str(i.name)), global_step=None, write_meta_graph=False, write_state=False)
 		print('Saving Done.')
 
 
