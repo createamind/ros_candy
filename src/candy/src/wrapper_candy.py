@@ -69,7 +69,7 @@ class Carla_Wrapper(object):
 		self.state = np.zeros((1, nlstm*2), dtype=np.float32)
 
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-		self.last_frame = None
+		self.last_frame = [np.zeros([320,320,3]) for i in range(4)]
 
 		self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
@@ -102,20 +102,18 @@ class Carla_Wrapper(object):
 		image, control, reward, std_control, manual, speed = inputs
 		image = image.astype(np.float32) / 128 - 1
 
-		# nowframe = image
-		# if self.last_frame is None:
-		# 	self.last_frame = nowframe
-		# frame = np.concatenate([self.last_frame, nowframe], 2)
-		# if refresh:
-		# 	self.last_frame = nowframe
+		nowframe = image
+		frame = np.concatenate([self.last_frame[0], self.last_frame[1], self.last_frame[2], self.last_frame[3], nowframe], 2)
+		if refresh:
+			self.last_frame = self.last_frame[1:] + [nowframe]
 
-		frame_10 = [image for i in range(10)]
-		for i in [1,2,3,4,5,6,7,8,9]:
-			frame_10[i-1] = frame_10[i]
-			frame_10[9] = image
+		# frame_10 = [image for i in range(10)]
+		# for i in [1,2,3,4,5,6,7,8,9]:
+		# 	frame_10[i-1] = frame_10[i]
+		# 	frame_10[9] = image
 		
-		#将fanme_10拼起来
-		frame = np.concatenate([frame_10[0],frame_10[1],frame_10[2],frame_10[3],frame_10[4],frame_10[5],frame_10[6],frame_10[7],frame_10[8],frame_10[9]], 10)
+		# #
+		# frame = np.concatenate([frame_10[0],frame_10[1],frame_10[2],frame_10[3],frame_10[4],frame_10[5],frame_10[6],frame_10[7],frame_10[8],frame_10[9]], 10)
 		
 		obs = (frame, speed)
 		
@@ -165,7 +163,7 @@ class Carla_Wrapper(object):
 
 	def calculate_difficulty(self, reward, vaerecon):
 		# return abs(reward)
-		return 1
+		return vaerecon
 		
 	def memory_training(self, pretrain=False):
 		l = len(self.obs)
@@ -193,7 +191,7 @@ class Carla_Wrapper(object):
 		return 0 # do nothing
 
 class CarlaGame(object):
-	def __init__(self, carla_wrapper, image_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher, brake_light, left_turn_switch, right_turn_switch):
+	def __init__(self, carla_wrapper, image_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
 		self._timer = None
 		self._display = None
 		self._main_image = None
@@ -211,14 +209,13 @@ class CarlaGame(object):
 		self.steer_publisher = steer_publisher
 		self.carla_wrapper = carla_wrapper
 
-
 		self.speed_getter = speed_getter
 		self.steer_getter = steer_getter
 		self.brake_throttle_getter = brake_throttle_getter
 		self.is_auto_getter = is_auto_getter
-		self.brake_light = brake_light
-		self.left_turn_switch = left_turn_switch
-		self.right_turn_switch = right_turn_switch
+		# self.brake_light = brake_light
+		# self.left_turn_switch = left_turn_switch
+		# self.right_turn_switch = right_turn_switch
 
 
 		self._display = pygame.display.set_mode(
@@ -247,9 +244,9 @@ class CarlaGame(object):
 		speed = self.speed_getter()
 		steer = self.steer_getter()
 		brake_throttle = self.brake_throttle_getter()
-		brake_light = self.brake_light_getter()
-		left_turn_switch = self.left_turn_switch_getter()
-		right_turn_switch = self.right_turn_switch_getter()
+		# brake_light = self.brake_light_getter()
+		# left_turn_switch = self.left_turn_switch_getter()
+		# right_turn_switch = self.right_turn_switch_getter()
 		manual = not self.is_auto_getter()
 
 		control = [brake_throttle, steer]
@@ -372,19 +369,15 @@ class WrapperCandy():
 		self._sub4 = rospy.Subscriber('/current_brake_throttle', Float32, self.load_brake_throttle, queue_size=1)
 		self._sub5 = rospy.Subscriber('/current_is_auto', Int16, self.load_is_auto, queue_size=1)
 
-		self._sub6 = rospy.Subscriber('/current_brake_light', Int16, self.load_brake_light, queue_size=1)
-		self._sub7 = rospy.Subscriber('/current_left_turn_switch', Int16, self.load_left_turn_switch, queue_size=1)
-		self._sub8 = rospy.Subscriber('/current_right_turn_switch', Int16, self.load_right_turn_switch, queue_size=1)
+		# self._sub6 = rospy.Subscriber('/current_brake_light', Int16, self.load_brake_light, queue_size=1)
+		# self._sub7 = rospy.Subscriber('/current_left_turn_switch', Int16, self.load_left_turn_switch, queue_size=1)
+		# self._sub8 = rospy.Subscriber('/current_right_turn_switch', Int16, self.load_right_turn_switch, queue_size=1)
 
 		self.throttle_publisher = rospy.Publisher('/ferrari_throttle', Float32, queue_size=1)
 		self.steer_publisher = rospy.Publisher('/ferrari_steer', Float32, queue_size=1)
-		self.light_publisher = rospy.Publisher('/ferrari_brake_light', Int16, queue_size=1)
-		self.left_turn_switch_publisher = rospy.Publisher('/ferrari_left_turn_switch', Int16, queue_size=1)
-		self.left_turn_switch_publisher = rospy.Publisher('/ferrari_right_turn_switch', Int16, queue_size=1)
-
-		
-		
-
+		# self.light_publisher = rospy.Publisher('/ferrari_brake_light', Int16, queue_size=1)
+		# self.left_turn_switch_publisher = rospy.Publisher('/ferrari_left_turn_switch', Int16, queue_size=1)
+		# self.left_turn_switch_publisher = rospy.Publisher('/ferrari_right_turn_switch', Int16, queue_size=1)
 
 		self.all_pub = rospy.Publisher('/wrapper_data', String, queue_size=1)
 		if load_mode:
@@ -395,9 +388,9 @@ class WrapperCandy():
 		self.steer = 0
 		self.is_auto = True
 		self.brake_throttle = 0
-		self.brake_light = 0
-		self.left_turn_switch = 0
-		self.right_turn_switch = 0
+		# self.brake_light = 0
+		# self.left_turn_switch = 0
+		# self.right_turn_switch = 0
 
 	def image_getter(self):
 		def func():
@@ -424,29 +417,29 @@ class WrapperCandy():
 			return self.is_auto
 		return func
 
-	def brake_light_getter(self):
-		def func():
-			return self.brake_light
-		return func
+	# def brake_light_getter(self):
+	# 	def func():
+	# 		return self.brake_light
+	# 	return func
 
-	def left_turn_switch_getter(self):
-		def func():
-			return self.left_turn_switch
-		return func
+	# def left_turn_switch_getter(self):
+	# 	def func():
+	# 		return self.left_turn_switch
+	# 	return func
 	
-	def right_turn_switch_getter(self):
-		def func():
-			return self.right_turn_switch
-		return func
+	# def right_turn_switch_getter(self):
+	# 	def func():
+	# 		return self.right_turn_switch
+	# 	return func
 
-	def load_right_turn_switch(self, msg):
-		self.right_turn_switch = msg.data
+	# def load_right_turn_switch(self, msg):
+	# 	self.right_turn_switch = msg.data
 
-	def load_left_turn_switch(self, msg):
-		self.left_turn_switch = msg.data
+	# def load_left_turn_switch(self, msg):
+	# 	self.left_turn_switch = msg.data
 
-	def load_brake_light(self, msg):
-		self.brake_light = msg.data
+	# def load_brake_light(self, msg):
+	# 	self.brake_light = msg.data
 
 
 	def load_speed(self, msg):
@@ -500,7 +493,11 @@ if __name__ == '__main__':
 	rospy.init_node('wrapper_candy')
 	wrapper_candy = WrapperCandy(args.load_rosbag_data)
 	carla_wrapper = Carla_Wrapper()
-	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.brake_light_getter(), wrapper_candy.left_turn_switch_getter(), wrapper_candy.right_turn_switch_getter() ,wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
+
+	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
+
+	# carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), 
+	# wrapper_candy.brake_light_getter(), wrapper_candy.left_turn_switch_getter(), wrapper_candy.right_turn_switch_getter() ,wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
 
 	rate = rospy.Rate(10) # 10hz
 	# image_loader = wrapper_candy.train_image_load()

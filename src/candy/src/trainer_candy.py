@@ -47,11 +47,11 @@ class Machine(object):
 		self.args = args
 
 		#Building Graph
-		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 6))
+		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 15))
 		self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
 		# self.steer = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
 
-		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 6))
+		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 15))
 		self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
 		# self.test_steer = tf.placeholder(tf.float32, shape=(1, 1))
 
@@ -71,8 +71,8 @@ class Machine(object):
 		test_recon_x, test_z, test_logsigma = self.test_vae.inference()
 		self.test_vae_loss = VAELoss(args, 'vae', test_recon_x, self.test_raw_image, test_z, test_logsigma)
 
-		z = tf.concat([z, self.speed], 1)
-		test_z = tf.concat([test_z, self.test_speed], 1)
+		z = tf.concat([z[:,:15], self.speed], 1)
+		test_z = tf.concat([test_z[:,:15], self.test_speed], 1)
 
 		z = tf.clip_by_value(z, -5, 5)
 		test_z = tf.clip_by_value(test_z, -5, 5)
@@ -156,7 +156,7 @@ class Machine(object):
 
 		# self.loss_parts = self.depth_decoder_loss.inference() +self.raw_decoder_loss.inference() +self.seg_decoder_loss.inference()
 		 
-		self.loss_parts = 5 * self.vae_loss.inference() + self.ppo.loss
+		self.loss_parts = self.vae_loss.inference() + self.ppo.loss
 		# self.loss_parts = self.raw_decoder_loss.inference()
 				
 		# weight_decay_loss = tf.reduce_mean(tf.get_collection('weightdecay_losses'))
