@@ -47,11 +47,11 @@ class Machine(object):
 		self.args = args
 
 		#Building Graph
-		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 15))
+		self.raw_image = tf.placeholder(tf.float32, shape=(args['batch_size'], 320, 320, 8, 3))
 		self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
 		# self.steer = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
 
-		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 15))
+		self.test_raw_image = tf.placeholder(tf.float32, shape=(1, 320, 320, 8, 3))
 		self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
 		# self.test_steer = tf.placeholder(tf.float32, shape=(1, 1))
 
