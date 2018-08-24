@@ -293,15 +293,15 @@ class Machine(object):
 
 
 
-TRAIN_EPOCH = 10
+TRAIN_EPOCH = 30
 BATCH_SIZE = 128
 global_step = 0
+batch = []
 
 
 if __name__ == '__main__':
 	rospy.init_node('trainer_candy')
 	machine = Machine()
-	batch = []
 
 	def calculate_difficulty(reward, vaerecon):
 		return vaerecon
@@ -309,6 +309,8 @@ if __name__ == '__main__':
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 
+		global batch
+		print(len(batch))
 		if len(batch) > 1000:
 			batch = batch[:1000]
 		l = len(obs)
@@ -320,6 +322,7 @@ if __name__ == '__main__':
 		# print(self.values)
 		# print(np.array(self.rewards) - np.array([i[0] for i in self.values]))
 		batch = sorted(batch, reverse=True)
+		print([t[0] for t in batch[:20]])
 		# difficulty = np.array(difficulty)
 		# print(difficulty[-20:])
 		# def softmax(x):
@@ -331,11 +334,11 @@ if __name__ == '__main__':
 		print("Memory Extraction Done.")
 
 		for _ in tqdm(range(TRAIN_EPOCH)):
-			# roll = np.random.choice(len(difficulty), BATCH_SIZE, p=difficulty)
-			# tbatch = []
-			# for i in roll:
-			# 	tbatch.append(batch[i])
-			tra_batch = [np.array([t[1][i] for t in batch]) for i in range(9)]
+			roll = np.random.choice(len(batch), BATCH_SIZE)
+			tbatch = []
+			for i in roll:
+				tbatch.append(batch[i])
+			tra_batch = [np.array([t[1][i] for t in tbatch]) for i in range(9)]
 			# tra_batch = [np.array([t[i] for t in tbatch]) for i in range(7)]
 			global global_step
 			machine.train(tra_batch, global_step)
