@@ -191,7 +191,7 @@ class Carla_Wrapper(object):
 		return 0 # do nothing
 
 class CarlaGame(object):
-	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
+	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, eyeleft_getter, eyeright_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
 		self._timer = None
 		self._display = None
 		self._main_image = None
@@ -207,6 +207,8 @@ class CarlaGame(object):
 		self.image_getter = image_getter
 		self.image2_getter = image2_getter
 		self.lidar_getter = lidar_getter
+		self.eyeleft_getter = eyeleft_getter
+		self.eyeright_getter = eyeright_getter
 
 		self.throttle_publisher = throttle_publisher
 		self.steer_publisher = steer_publisher
@@ -369,6 +371,8 @@ class WrapperCandy():
 		self._sub = rospy.Subscriber('/camera/image_raw', Image, self.load_image, queue_size=1)
 		self._subb = rospy.Subscriber('/camera2/image_raw', Image, self.load_image2, queue_size=1)
 		self._subb1 = rospy.Subscriber('/lidar/image_raw', Image, self.load_lidar, queue_size=1)
+		self._subb2 = rospy.Subscriber('/eyeleft/image_raw', Image, self.load_eyeleft, queue_size=1)
+		self._subb3 = rospy.Subscriber('/eyeright/image_raw', Image, self.load_eyeright, queue_size=1)
 
 		self._sub2 = rospy.Subscriber('/current_speed', Float32, self.load_speed, queue_size=1)
 		self._sub3 = rospy.Subscriber('/current_steer', Float32, self.load_steer, queue_size=1)
@@ -392,6 +396,8 @@ class WrapperCandy():
 		self.image = None
 		self.image2 = None
 		self.lidar = None
+		self.eyeleft = None
+		self.eyeright = None
 
 		self.speed = 0
 		self.steer = 0
@@ -412,6 +418,14 @@ class WrapperCandy():
 	def lidar_getter(self):
 		def func():
 			return self.lidar
+		return func
+	def eyeleft_getter(self):
+		def func():
+			return self.eyeleft
+		return func
+	def eyeright_getter(self):
+		def func():
+			return self.eyeright_getter
 		return func
 
 	def speed_getter(self):
@@ -487,6 +501,22 @@ class WrapperCandy():
 		image = cv_image[...,::-1]
 		self.image2 = image
 
+	def load_eyeleft(self, image_msg):
+		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		cv_image = cv2.resize(cv_image,(320,320))
+		cv_image = cv2.flip(cv_image, -1)
+		# print(cv_image)
+		image = cv_image[...,::-1]
+		self.eyeleft = image
+
+	def load_eyeright(self, image_msg):
+		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		cv_image = cv2.resize(cv_image,(320,320))
+		cv_image = cv2.flip(cv_image, -1)
+		# print(cv_image)
+		image = cv_image[...,::-1]
+		self.eyeright = image
+
 	def load_lidar(self, image_msg):
 		print(image_msg)
 		self.lidar = image_msg
@@ -505,10 +535,10 @@ class WrapperCandy():
 				yield image
 
 	def all_loader(self, msg):
-		self.image, self.image2, self.lidar, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
+		self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 
 	def all_publisher(self):
-		msg = msgpack.packb([self.image, self.image2, self.lidar, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
+		msg = msgpack.packb([self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
 		self.all_pub.publish(msg)
 
 if __name__ == '__main__':
@@ -523,7 +553,7 @@ if __name__ == '__main__':
 	wrapper_candy = WrapperCandy(args.load_rosbag_data)
 	carla_wrapper = Carla_Wrapper()
 
-	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.image2_getter(), wrapper_candy.lidar_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
+	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.image2_getter(), wrapper_candy.lidar_getter(), wrapper_candy.eyeleft_getter(), wrapper_candy.eyeright_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
 
 	# carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), 
 	# wrapper_candy.brake_light_getter(), wrapper_candy.left_turn_switch_getter(), wrapper_candy.right_turn_switch_getter() ,wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
