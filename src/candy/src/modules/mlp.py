@@ -2,50 +2,24 @@ from __future__ import print_function, division, absolute_import
 
 import tensorflow as tf
 import os
+from modules.module import Module
 
-class MLP:
-	def __init__(self, args, name, x, s=10, hidden=100):
-		self.args = args
-		self.name = name
-		self.x = x
-		self.output_size = s
-		self.hidden_size = hidden
+class MLP(Module):
 
-	def inference(self):
-		with tf.variable_scope(self.name) as _:
-			logits = tf.layers.dropout(inputs=self.x, rate=0.2)
-			logits = tf.layers.dense(inputs=logits, units=self.hidden_size, activation=tf.nn.relu, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
-			
-			logits = tf.nn.leaky_relu(logits) # Relu activation
-			logits = tf.clip_by_value(logits, -5, 5)
+    def __init__(self, inputs, size, *args, **kwargs):
+        self._size = size
+        self._inputs = inputs
+        super(MLP, self).__init__(*args, **kwargs)
 
-			logits = tf.layers.dropout(inputs=logits, rate=0.2)
-			self.outputs = tf.layers.dense(inputs=logits, units=self.output_size, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
-		self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name))
-		return self.outputs
+    def _build_net(self, is_training, reuse):
+        x = self._inputs
+        
+        for i, size in enumerate(self._size):
+            x = tf.layers.dense(inputs=x, units=size, activation=None, 
+                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']))
+                
+            if i != len(self._size) - 1:
+                x = tf.nn.relu(x)
+                x = tf.layers.dropout(inputs=x, rate=0.2, training=is_training)
 
-
-	def optimize(self, loss):
-		self.opt = tf.train.AdamOptimizer(learning_rate=self.args[self.name]['learning_rate'])
-		gvs = self.opt.compute_gradients(loss, var_list=tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name))
-		# for grad, var in gvs:
-		# 	if grad is not None:
-		# 		tf.summary.histogram(var.op.name + '/gradients', grad)
-		gvs = [(tf.clip_by_norm(grad, 5), var) for grad, var in gvs]
-		opt_op = self.opt.apply_gradients(gvs)
-		return opt_op
-
-
-	def variable_restore(self, sess):
-
-		model_filename = os.path.join("save", self.name)
-
-		# if os.path.isfile(model_filename + '.meta'):
-		# 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
-		# 	self.saver.restore(sess, model_filename)
-		# 	return
-
-		if os.path.isfile(model_filename + '.data-00000-of-00001'):
-			self.saver.restore(sess, model_filename)
-			return
-	
+        return x

@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
-from modules.video_encoder import VideoEncoder
-from modules.video_decoder import VideoDecoder
-from modules.losses import MSELoss, VAELoss
-from modules.mlp import MLP
+from modules.multimodal import MultiModal
 from modules.ppo import PPO
 
 import tensorflow as tf
@@ -17,10 +14,8 @@ import msgpack
 import msgpack_numpy as m
 m.patch()
 from std_msgs.msg import String
-
-
-
 from candy.srv import Step, Value, UpdateWeights
+
 import rospy
 
 import sys
@@ -50,7 +45,7 @@ class Machine(object):
         z = tf.clip_by_value(z, -5, 5)
         test_z = tf.clip_by_value(test_z, -5, 5)
 
-        self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5, is_training=is_training, reuse=is_test)
+        self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
 
         # self.test_vae_loss.inference()
         # z = self.c3d_encoder.inference()
@@ -111,7 +106,7 @@ class Machine(object):
         td_map[self.test_speed] = np.array([[obs[1]]]) # speed
         # td_map[self.test_steer] = np.array([[obs[2]]])
 
-        return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.test_vae_loss.recon], td_map)
+        return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.multimodal_test.loss], td_map)
 
 
     def value(self, obs, state, action):

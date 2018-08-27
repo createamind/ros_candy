@@ -1,55 +1,11 @@
 ---
-c3d_encoder:
-    learning_rate: 0.00000000000001
-    weight_decay: 0.00000000000001
 vae:
     learning_rate: 0.0005
     weight_decay: 0.001
 ppo:
     learning_rate: 0.0005
     weight_decay: 0.001
-raw_image:
-    learning_rate: 0.00000000000001
-    weight_decay: 0.00000000000001
-seg:
-    learning_rate: 0.00000000000001
-    weight_decay: 0.00000000000001
-depth:
-    learning_rate: 0.00000000000001
-    weight_decay: 0.00000000000001
-speed:
-    learning_rate: 0.00001
-    weight_decay: 0.003
-collision:
-    learning_rate: 0.00001
-    weight_decay: 0.003
-intersection:
-    learning_rate: 0.00001
-    weight_decay: 0.003
-policy:
-    learning_rate: 0.0003
-    weight_decay: 0.003
-transition:
-    learning_rate: 0.00001
-    weight_decay: 0.003
 imitation_coefficient: 0.9
 batch_size: 32
 x_dim: 320
 y_dim: 320
-name: Martin D'vloper
-job: Developer
-skill: Elite
-employed: True
-foods:
-    - Apple
-    - Orange
-    - Strawberry
-    - Mango
-languages:
-    perl: Elite
-    python: Elite
-    pascal: Lame
-education: |
-    4 GCSEs
-    3 A-Levels
-    BSc in the Internet of Things

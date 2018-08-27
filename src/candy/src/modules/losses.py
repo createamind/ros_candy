@@ -4,42 +4,31 @@ from modules.module import Module
 
 class MSELoss(Module):
 
-	def __init__(self, predict, label, *args, **kwargs):
-		self.predict = predict
-		self.label = label
-		super(MSELoss, self).__init__(*args, **kwargs)
+    def __init__(self, predict, label, *args, **kwargs):
+        self._predict = predict
+        self._label = label
+        super(MSELoss, self).__init__(*args, **kwargs)
 
-    def _build_net(self, inputs, is_training, reuse):
-		
-		loss = tf.reduce_mean(tf.losses.mean_squared_error(self.label, self.predict))
-		tf.summary.scalar(self.name + '_loss', loss)
-
-		return loss
-
-
-class VAELoss():
-
-    def __init__(self, args, name, recon_x, x, mu, logsigma):
-        self.args = args
-        self.name = name
-        self.recon_x = recon_x
-        self.x = x
-        self.mu = mu
-        self.logsigma = logsigma
-
-    def inference(self):
-        const = 1 / (self.args['batch_size'] * self.args['x_dim'] * self.args['y_dim'])
+    def _build_net(self, is_training, reuse):
         
-        # self.x = tf.Print(self.x, [self.x])
-        # self.recon_x = tf.Print(self.recon_x, [self.recon_x])
+        loss = tf.reduce_mean(tf.losses.mean_squared_error(self._label, self._predict))
+        tf.summary.scalar(self._name, loss)
 
-        self.recon = const * tf.reduce_sum(tf.squared_difference(self.x, self.recon_x))
-        self.vae = const * -0.5 * tf.reduce_sum(1.0 + 2.0 * self.logsigma - tf.square(self.mu) - tf.exp(2 * self.logsigma))
+        return loss
 
-        tf.summary.scalar(self.name + 'loss_vae', self.vae)
-        tf.summary.scalar(self.name + 'loss_recon', self.recon)
 
-        return tf.reduce_sum(self.recon + 250 * self.vae)
+class VAELoss(Module):
+
+    def __init__(self, mu, logsigma, *args, **kwargs):
+        self._mu = mu
+        self._logsigma = logsigma
+        super(VAELoss, self).__init__(*args, **kwargs)
+
+    def _build_net(self, is_training, reuse):
+        const = 1 / (self._args['batch_size'] * self._args['x_dim'] * self._args['y_dim'])
+        loss = const * -0.5 * tf.reduce_sum(1.0 + 2.0 * self._logsigma - tf.square(self._mu) - tf.exp(2 * self._logsigma))
+        tf.summary.scalar(self._name, loss)
+        return loss
 
 
 # class CrossEntropyLoss:

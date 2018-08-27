@@ -1,20 +1,5 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
-
-from modules.c3d import C3D_Encoder
-
-from modules.policy_gradient import PG, PGLoss
-
-from modules.deconv import ImageDecoder
-
-from modules.losses import MSELoss, CrossEntropyLoss
-
-from modules.networks import MLP
-
-from modules.vae import VAE, VAELoss
-
-from modules.ppo import PPO, LstmPolicy
-
 import tensorflow as tf
 import numpy as np
 import yaml
@@ -25,8 +10,6 @@ import msgpack
 import msgpack_numpy as m
 m.patch()
 from std_msgs.msg import String
-
-
 from candy.srv import Step, Value, UpdateWeights
 import rospy
 
@@ -39,8 +22,6 @@ class ARGS(object):
 
 
 from machine import Machine
-
-
 
 if __name__ == '__main__':
 	rospy.init_node('actor_candy')

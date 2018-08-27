@@ -12,7 +12,7 @@ class Module(object):
         outputs (tuple): Tuple of outputs of the module.
 
     """
-    def __init__(self, inputs, args, name, is_training=False, reuse=False):
+    def __init__(self, args, name, is_training=False, reuse=False):
         r"""Constructor.
 
         Args:
@@ -28,12 +28,12 @@ class Module(object):
 
         # Public 
         with tf.variable_scope(self._name, reuse=reuse) as _:
-            self.outputs = self._build_net(inputs, is_training, reuse)
+            self.outputs = self._build_net(is_training, reuse)
 
         #Variable saver
         self._saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name))
 
-    def _build_net(self, inputs, is_training, reuse):
+    def _build_net(self, is_training, reuse):
         r"""Build the graph. The function should be overwritten by sub-classes.
 
         Args:
