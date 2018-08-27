@@ -54,7 +54,7 @@ if __name__ == '__main__':
 	machine = Machine()
 
 	def calculate_difficulty(reward, vaerecon):
-		return vaerecon
+		return vaerecon * vaerecon * abs(reward)
 
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
@@ -75,11 +75,11 @@ if __name__ == '__main__':
 			# 	future_frame.append(np.array(obs[j][0][:,:,-1,:]))
 			# future_frame = np.concatenate(future_frame, 2)
 			# print(future_frame.shape)
-			future_frame = obs[i+8][0]
-			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_frame)]) )
+			future_obs = obs[i+8]
+			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
 		for i in range(l - 8, l):
-			future_frame = np.zeros([320, 320, 8, 3])
-			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_frame)]) )
+			future_obs = [ [np.zeros([320, 320, 8, 3]) for i in range(4)], 0, [0, 0]]
+			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
 
 		# print(self.rewards)
 		# print(self.values)

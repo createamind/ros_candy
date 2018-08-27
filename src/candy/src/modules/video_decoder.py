@@ -43,7 +43,6 @@ class VideoDecoder(Module):
 
         if not reuse:
             timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
-            for i in range(1):
-                tf.summary.image(self._name, timage[:1,:,:,i,:])
-
+            tf.summary.image(self._name + '_first', timage[:1,:,:,0,:])
+            tf.summary.image(self._name + '_last', timage[:1,:,:,-1,:])
         return x

@@ -55,11 +55,10 @@ class Machine(object):
 
         total_loss = self.multimodal_train.loss + self.ppo.loss
 
-
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
-        for var in tf.trainable_variables():
-            tf.summary.histogram(var.op.name, var)
+        # for var in tf.trainable_variables():
+        #     tf.summary.histogram(var.op.name, var)
     
         self.final_ops = []
         for part in self.variable_save_optimize_parts:
@@ -101,7 +100,16 @@ class Machine(object):
     def step(self, obs, state):
         # mask = np.zeros(1)
         td_map = {self.ppo.act_model.S:state}
-        td_map[self.test_raw_image] = np.array([obs[0]])
+
+        td_map[self.multimodal_test.camera_left] = np.array([obs[0][0]])
+        td_map[self.multimodal_test.camera_right] = np.array([obs[0][1]])
+        td_map[self.multimodal_test.eye_left] = np.array([obs[0][2]])
+        td_map[self.multimodal_test.eye_right] = np.array([obs[0][3]])
+        td_map[self.multimodal_test.actions] = np.array([obs[2]])
+
+        # td_map[self.test_raw_image] = np.array([obs[0][1]])
+        # td_map[self.test_raw_image] = np.array([obs[0][2]])
+
         td_map[self.is_training] = False
         td_map[self.test_speed] = np.array([[obs[1]]]) # speed
         # td_map[self.test_steer] = np.array([[obs[2]]])
@@ -110,16 +118,17 @@ class Machine(object):
 
 
     def value(self, obs, state, action):
+        raise NotImplementedError
         # mask = np.zeros(1)
-        if len(np.array(action).shape) == 1:
-            action = [action]
-        td_map = {self.ppo.act_model.S:state, self.ppo.act_model.a_z: action}
-        td_map[self.test_raw_image] = np.array([obs[0]])
-        td_map[self.is_training] = False
-        td_map[self.test_speed] = np.array([[obs[1]]])
-        # td_map[self.test_steer] = np.array([[obs[2]]])
+        # if len(np.array(action).shape) == 1:
+        #     action = [action]
+        # td_map = {self.ppo.act_model.S:state, self.ppo.act_model.a_z: action}
+        # td_map[self.test_raw_image] = np.array([obs[0]])
+        # td_map[self.is_training] = False
+        # td_map[self.test_speed] = np.array([[obs[1]]])
+        # # td_map[self.test_steer] = np.array([[obs[2]]])
 
-        return self.sess.run([self.ppo.act_model.a_z, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogpz, self.test_vae_loss.recon], td_map)
+        # return self.sess.run([self.ppo.act_model.a_z, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogpz, self.test_vae_loss.recon], td_map)
     
     def update_weights(self, mat):
 
@@ -130,15 +139,19 @@ class Machine(object):
 
 
     def train(self, inputs, global_step):
-        obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual, future_image = inputs
+        obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual, future_obs = inputs
 
         values = np.squeeze(values, 1)
         neglogpacs = np.squeeze(neglogpacs, 1)
         # rewards = np.squeeze(rewards, 1)
 
         raw_image = np.array([ob[0] for ob in obs])
+        raw_image = np.array([ob[0] for ob in obs])
+        raw_image = np.array([ob[0] for ob in obs])
+        raw_image = np.array([ob[0] for ob in obs])
+
         speed = np.array([[ob[1]] for ob in obs])
-        # steer = np.array([[ob[2]] for ob in obs])
+        actions = np.array([[ob[2]] for ob in obs])
 
         # print(raw_image.shape)
         # print(speed.shape)
@@ -156,13 +169,19 @@ class Machine(object):
         td_map[self.ppo.std_action] = std_actions
         td_map[self.ppo.std_mask] = manual
 
-        td_map[self.raw_image] = raw_image
-        td_map[self.future_image] = future_image
+        td_map[self.multimodal_train.camera_left] = np.array([ob[0][0] for ob in obs])
+        td_map[self.multimodal_train.camera_right] = np.array([ob[0][1] for ob in obs])
+        td_map[self.multimodal_train.eye_left] = np.array([ob[0][2] for ob in obs])
+        td_map[self.multimodal_train.eye_right] = np.array([ob[0][3] for ob in obs])
+        td_map[self.multimodal_train.actions] = np.array([ob[2] for ob in obs])
+
+        td_map[self.multimodal_train.camera_left_future] = np.array([ob[0][0] for ob in future_obs])
+        td_map[self.multimodal_train.camera_right_future] = np.array([ob[0][1] for ob in future_obs])
+        td_map[self.multimodal_train.eye_left_future] = np.array([ob[0][2] for ob in future_obs])
+        td_map[self.multimodal_train.eye_right_future] = np.array([ob[0][3] for ob in future_obs])
+        td_map[self.multimodal_train.actions_future] = np.array([ob[2] for ob in future_obs])
+
         td_map[self.speed] = speed
-        # td_map[self.steer] = steer
-        td_map[self.test_raw_image] = [raw_image[0]]
-        td_map[self.test_speed] = [speed[0]]
-        # td_map[self.test_steer] = [steer[0]]
 
         summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
         if global_step % 10 == 0:

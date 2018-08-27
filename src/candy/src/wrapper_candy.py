@@ -69,10 +69,14 @@ class Carla_Wrapper(object):
 		self.state = np.zeros((1, nlstm*2), dtype=np.float32)
 
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-		self.last_frame = [np.zeros([320,320,1,3]) for i in range(7)]
+		self.last_frame = [[np.zeros([320,320,1,3]) for i in range(7)] for j in range(4)]
 
 		self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
+
+	def clear(self):
+		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
+		self.last_frame = [[np.zeros([320,320,1,3]) for i in range(7)] for j in range(4)]
 
 	def update_reward(self, cnt, obs, action, reward):
 		l = len(self.obs)
@@ -99,55 +103,45 @@ class Carla_Wrapper(object):
 
 	def pre_process(self, inputs, refresh=False):
 
-		image, control, reward, std_control, manual, speed = inputs
-		image = image.astype(np.float32) / 128 - 1
+		images, control, reward, std_control, manual, speed = inputs
+		frame = [None] * 4
+		for i, image in enumerate(images):
+			images[i] = image.astype(np.float32) / 128 - 1
+			nowframe = np.expand_dims(image, 2)
+			frame[i] = np.concatenate(self.last_frame[i] + [nowframe], 2)
+			self.last_frame[i] = self.last_frame[i][1:] + [nowframe]
 
-		nowframe = np.expand_dims(image, 2)
-		frame = np.concatenate(self.last_frame + [nowframe], 2)
-		if refresh:
-			self.last_frame = self.last_frame[1:] + [nowframe]
-
-		# frame_10 = [image for i in range(10)]
-		# for i in [1,2,3,4,5,6,7,8,9]:
-		# 	frame_10[i-1] = frame_10[i]
-		# 	frame_10[9] = image
+		obs = [frame, speed, control]
 		
-		# #
-		# frame = np.concatenate([frame_10[0],frame_10[1],frame_10[2],frame_10[3],frame_10[4],frame_10[5],frame_10[6],frame_10[7],frame_10[8],frame_10[9]], 10)
-		
-		obs = (frame, speed)
-		
-		# if std_control == 0:
-		# 	manual = False
 		return obs, reward, control, std_control, manual
 		
 
-	def update(self, inputs):
+	# def update(self, inputs):
 
-		obs, reward, action, std_action, manual = self.pre_process(inputs, refresh=True)
+	# 	obs, reward, action, std_action, manual = self.pre_process(inputs, refresh=True)
 
-		rospy.wait_for_service('model_value')
-		try:
-			model_value = rospy.ServiceProxy('model_value', Value)
+	# 	rospy.wait_for_service('model_value')
+	# 	try:
+	# 		model_value = rospy.ServiceProxy('model_value', Value)
 
-			msg_input = msgpack.packb([obs, self.state, action], use_bin_type=True)
-			msg_output = model_value(msg_input)
-			_, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
+	# 		msg_input = msgpack.packb([obs, self.state, action], use_bin_type=True)
+	# 		msg_output = model_value(msg_input)
+	# 		_, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
 
-		except rospy.ServiceException as e:
-			print("Service call failed: %s" % e)
-			return
+	# 	except rospy.ServiceException as e:
+	# 		print("Service call failed: %s" % e)
+	# 		return
 
 
-		self.states.append(self.state)
-		self.obs.append(obs)
-		self.actions.append(action)
-		self.values.append(value)
-		self.neglogpacs.append(neglogpacs)
-		self.rewards.append(reward)
-		self.vaerecons.append(vaerecon)
-		self.std_actions.append(std_action)
-		self.manual.append(manual)
+	# 	self.states.append(self.state)
+	# 	self.obs.append(obs)
+	# 	self.actions.append(action)
+	# 	self.values.append(value)
+	# 	self.neglogpacs.append(neglogpacs)
+	# 	self.rewards.append(reward)
+	# 	self.vaerecons.append(vaerecon)
+	# 	self.std_actions.append(std_action)
+	# 	self.manual.append(manual)
 
 		# self.red_buffer.append(red)
 		# self.manual_buffer.append(manual)
@@ -172,36 +166,66 @@ class Carla_Wrapper(object):
 		self.publisher.publish(msg_str)
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
 
+	def get_control_and_update(self, inputs):
 
-	def get_control(self, inputs):
+		obs, reward, _, std_action, manual = self.pre_process(inputs, refresh=True)
 
-		obs, _, _, _, manual = self.pre_process(inputs)
 		rospy.wait_for_service('model_step')
-
 		try:
 			model_step = rospy.ServiceProxy('model_step', Step)
 			msg_input = msgpack.packb([obs, self.state], use_bin_type=True)
 			msg_output = model_step(msg_input)
-			action, _, _, _, _ = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
+			action, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
 			# print(action)
-			return action
 		except rospy.ServiceException as e:
 			print("Service call failed: %s" % e)
 
-		return 0 # do nothing
+		self.states.append(self.state)
+
+		# Change obs
+		if not manual:
+			obs[2] = action
+
+		self.obs.append(obs)
+		self.actions.append(action)
+		self.values.append(value)
+		self.neglogpacs.append(neglogpacs)
+		self.rewards.append(reward)
+		self.vaerecons.append(vaerecon)
+		self.std_actions.append(std_action)
+		self.manual.append(manual)
+
+		return action
+	# def get_control(self, inputs):
+
+	# 	obs, _, _, _, manual = self.pre_process(inputs)
+	# 	rospy.wait_for_service('model_step')
+
+	# 	try:
+	# 		model_step = rospy.ServiceProxy('model_step', Step)
+	# 		msg_input = msgpack.packb([obs, self.state], use_bin_type=True)
+	# 		msg_output = model_step(msg_input)
+	# 		action, _, _, _, _ = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
+	# 		# print(action)
+	# 		return action
+	# 	except rospy.ServiceException as e:
+	# 		print("Service call failed: %s" % e)
+
+	# 	return 0 # do nothing
 
 class CarlaGame(object):
 	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, eyeleft_getter, eyeright_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
 		self._timer = None
 		self._display = None
-		self._main_image = None
+		self.images = None
 		self.should_display = True
 		random.seed(datetime.datetime.now())
 		self.manual = True
-		self.manual_control = False
 		self.cnt = 0
 		self.endnow = False
 		self.canreplay = True
+		self.history_manual = False
+		self.history_steer = 0.0
 		pygame.init()
 
 		self.image_getter = image_getter
@@ -219,8 +243,6 @@ class CarlaGame(object):
 		self.brake_throttle_getter = brake_throttle_getter
 		self.is_auto_getter = is_auto_getter
 
-
-
 		self._display = pygame.display.set_mode(
 			(WINDOW_WIDTH, WINDOW_HEIGHT),
 			pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -231,27 +253,45 @@ class CarlaGame(object):
 		pygame.event.pump() # process event queue
 
 
+	def _calculate_reward(self, manual, history_manual, steer, history_steer):
+		reward = 0
+		if history_manual == False and manual == True:
+			reward = -1
+		reward = 0.1 - 20 * abs(history_steer - steer)
+		return reward
+
 	def _on_loop(self):
-		self._main_image = self.image_getter()
-		if self._main_image is None:
+		self.left_image = self.image_getter()
+		if self.left_image is None:
 			return
+
+		self.right_image = self.image2_getter()
+		self.eyeleft = self.eyeleft_getter()
+		self.eyeright = self.eyeright_getter()
+		
+		speed = self.speed_getter()
+		steer = self.steer_getter()
+		brake_throttle = self.brake_throttle_getter()
+		manual = not self.is_auto_getter()
+
 
 		control, reward = self._get_keyboard_control(pygame.key.get_pressed())
 		if reward is None:
-			reward = 0
+			reward = self._calculate_reward(manual, self.history_manual, steer, self.history_steer)
 		if control == "done":
 			return
 		elif control is None:
 			return
 
-		speed = self.speed_getter()
-		steer = self.steer_getter()
-		brake_throttle = self.brake_throttle_getter()
-		
-		manual = not self.is_auto_getter()
+		self.history_manual = manual
+		self.history_steer = steer
 
 		control = [brake_throttle, steer]
-		model_control = self.carla_wrapper.get_control([self._main_image, control, reward, control, manual, speed])
+		self.images = [self.left_image, self.right_image, self.eyeleft, self.eyeright]
+
+		self.cnt += 1
+		model_control = self.carla_wrapper.get_control_and_update([self.images, control, reward, control, manual, speed])
+
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
 		print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" %  (control[0], model_control[0], control[1], model_control[1]))
@@ -260,21 +300,19 @@ class CarlaGame(object):
 		else:
 			print("Model!")
 
-		if self.manual_control:
-			self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
-			self.steer_publisher.publish(max(-1.0, min(1.0, control[1])))
-		else:
-			self.throttle_publisher.publish(max(-1.0, min(1.0, model_control[0])))
-			self.steer_publisher.publish(max(-1.0, min(1.0, model_control[1])))
+		# if self.manual_control:
+		# 	self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
+		# 	self.steer_publisher.publish(max(-1.0, min(1.0, control[1])))
+		# else:
+		self.throttle_publisher.publish(max(-1.0, min(1.0, model_control[0])))
+		self.steer_publisher.publish(max(-1.0, min(1.0, model_control[1])))
 
-		if self.endnow or (self.canreplay and self.cnt > BUFFER_LIMIT):
-			self.carla_wrapper.post_process([self._main_image, model_control, -1 if self.endnow else 0, control, manual, speed], self.cnt)
+		if self.endnow or self.cnt > BUFFER_LIMIT:
+			if self.canreplay:
+				self.carla_wrapper.post_process([self.images, model_control, reward, control, manual, speed], self.cnt)
+			self.carla_wrapper.clear()
 			self.cnt = 0
-			self.endnow = False
-		else:
-			self.cnt += 1
-			self.endnow = False
-			self.carla_wrapper.update([self._main_image, model_control, reward, control, manual, speed])
+		self.endnow = False
 		
 	def _get_keyboard_control(self, keys):
 		th = 0
@@ -305,7 +343,7 @@ class CarlaGame(object):
 			th = -1
 
 		if keys[K_c]:
-			self.manual_control = not self.manual_control
+			self.canreplay = not self.canreplay
 
 		reward = None
 		if keys[K_1]:
