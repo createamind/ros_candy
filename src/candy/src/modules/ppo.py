@@ -9,7 +9,7 @@ import gym
 from gym.spaces import Box, Discrete, Tuple
 from modules import policies
 # from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm
-from modules.distributions import make_pdtype
+from modules.utils.distributions import make_pdtype
 import sys
 from tensorflow.contrib import rnn
 
@@ -21,14 +21,14 @@ class LstmPolicy(object):
 	def __init__(self, args, name, X, nbatch, nsteps, nlstm=10, reuse=False):
 		nenv = nbatch // nsteps
 		self.args = args
-		self.name = name
+		self._name = name
 		self.pdtype = make_pdtype(Box(low=np.array([-1.0,-1.0], dtype=np.float32), high=np.array([1.0,1.0],dtype=np.float32)))
 		# X, processed_x = observation_input(ob_space, nbatch)
 
 		# X = tf.placeholder(tf.float32, [nbatch, HIDDEN])
 		# M = tf.placeholder(tf.float32, [nbatch]) #mask (done t-1)
 		S = tf.placeholder(tf.float32, [nsteps, nlstm*2]) #states
-		with tf.variable_scope(self.name, reuse=reuse):
+		with tf.variable_scope(self._name, reuse=reuse):
 			h = X
 
 			lstm_cell = rnn.BasicLSTMCell(nlstm, state_is_tuple=False)
@@ -36,8 +36,8 @@ class LstmPolicy(object):
 
 			o, snew = cell(h, S)
 
-			h5 = tf.layers.dense(o, 4, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
-			vf = tf.layers.dense(o, 1, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self.name]['weight_decay']))
+			h5 = tf.layers.dense(o, 4, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self._name]['weight_decay']))
+			vf = tf.layers.dense(o, 1, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self._name]['weight_decay']))
 			
 			# h5 = tf.Print(h5, [h5], summarize=15)
 			h5 = tf.clip_by_value(h5, -5, 5)
@@ -75,7 +75,7 @@ class PPO(object):
 		# sess = tf.get_default_session()
 
 		self.args = args
-		self.name = name
+		self._name = name
 		act_model = LstmPolicy(args, 'ppo', test_z, 1, 1, reuse=False)
 		train_model = LstmPolicy(args, 'ppo', z, args['batch_size'], args['batch_size'], reuse=True)
 
@@ -140,7 +140,7 @@ class PPO(object):
 
 		tmd_steer = train_model.pi[:,1] - self.std_action[:,1]
 		tmd_thro = train_model.pi[:,0] - self.std_action[:,0]
-		imitation_loss = 10 * tf.square(tmd_steer) + tf.square(tmd_thro)
+		imitation_loss = tf.square(tmd_steer) + 0 * tf.square(tmd_thro)
 		# tmd = tf.Print(tmd, [tmd], summarize=1000)
 		# self.std_action = tf.Print(self.std_action, [self.std_action], summarize=10)
 		# imitation_loss = tf.reduce_mean(tf.square(tmd), 1)
@@ -180,19 +180,19 @@ class PPO(object):
 		self.train_model = train_model
 		self.act_model = act_model
 		self.initial_state = act_model.initial_state
-		self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name))
+		self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name))
 
 
 	def optimize(self, loss):
-		self.opt = tf.train.AdamOptimizer(learning_rate=self.args[self.name]['learning_rate'])
-		gvs = self.opt.compute_gradients(loss, var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name))
+		self.opt = tf.train.AdamOptimizer(learning_rate=self.args[self._name]['learning_rate'])
+		gvs = self.opt.compute_gradients(loss, var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name))
 		# gvs = [(tf.clip_by_norm(grad, 5), var) for grad, var in gvs if not grad is None]
 		opt_op = self.opt.apply_gradients(gvs)
 		return opt_op
 
 	def variable_restore(self, sess):
 
-		model_filename = os.path.join(sys.path[0], "save2/", self.name)
+		model_filename = os.path.join(sys.path[0], "save/", self._name)
 		# if os.path.isfile(model_filename + '.meta'):
 		# 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
 		# 	self.saver.restore(sess, model_filename)

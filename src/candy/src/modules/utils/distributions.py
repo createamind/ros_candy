@@ -1,7 +1,7 @@
 from __future__ import print_function, division, absolute_import
 import tensorflow as tf
 import numpy as np
-from modules.utils import fc
+from modules.utils.utils import fc
 from tensorflow.python.ops import math_ops
 
 class Pd(object):

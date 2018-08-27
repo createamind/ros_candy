@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+import sys
 
 class Module(object):
     r"""Abstract module for all modules.
@@ -11,13 +12,14 @@ class Module(object):
         outputs (tuple): Tuple of outputs of the module.
 
     """
-    def __init__(self, args, name, inputs, is_training=False, reuse=False):
+    def __init__(self, inputs, args, name, is_training=False, reuse=False):
         r"""Constructor.
 
         Args:
             args (dict): Arguments.
             name (string): The name of the module.
             inputs (tuple): Tuple of inputs.
+            is_training (bool): If it is training (for dropout and bn ops).   
             reuse (bool): If `reuse=True`, the module reuses existing variables. 
         """
         # Private
@@ -25,7 +27,8 @@ class Module(object):
         self._name = name
 
         # Public 
-        self.outputs = self._build_net(inputs, is_training, reuse)
+        with tf.variable_scope(self._name, reuse=reuse) as _:
+            self.outputs = self._build_net(inputs, is_training, reuse)
 
         #Variable saver
         self._saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name))
@@ -53,11 +56,14 @@ class Module(object):
         """
         self.opt = tf.train.AdamOptimizer(learning_rate=self._args[self._name]['learning_rate'])
 
-        # Clip Gradient
-        gvs = self.opt.compute_gradients(loss, var_list=tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self._name))
-        gvs = [(tf.clip_by_norm(grad, 5), var) for grad, var in gvs]
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            # Clip Gradient
+            gvs = self.opt.compute_gradients(loss, var_list=tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self._name))
+            gvs = [(tf.clip_by_norm(grad, 5), var) for grad, var in gvs]
 
-        opt_op = self.opt.apply_gradients(gvs)
+            opt_op = self.opt.apply_gradients(gvs)
+
         return opt_op
 
 
@@ -68,7 +74,7 @@ class Module(object):
             sess (tf.Session): The session.
 
         """
-        model_filename = os.path.join("save", self._name)
+        model_filename = os.path.join(sys.path[0], "save/", self._name)
         if os.path.isfile(model_filename + '.data-00000-of-00001'):
             self._saver.restore(sess, model_filename)
             return
