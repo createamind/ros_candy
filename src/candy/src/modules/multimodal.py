@@ -60,15 +60,15 @@ class MultiModal(Module):
         self.sample_z = sigma * eps + self.mean
 
         #Decoder
-        self.de_agg = MLP(self.sample_z, [522], self._args, 'de_aggregation', is_training=is_training, reuse=reuse)
-        self.de_agg = tf.layers.dropout(self.de_agg, rate=0.25, training=is_training)
+        self.de_mlp = MLP(self.sample_z, [522], self._args, 'de_aggregation', is_training=is_training, reuse=reuse)
+        self.de_agg = tf.layers.dropout(self.de_mlp.outputs, rate=0.25, training=is_training)
         # self.parts += [self.de_agg]
 
-        self.d1 = self.de_agg.outputs[:,0:128]
-        self.d2 = self.de_agg.outputs[:,128:256]
-        self.d3 = self.de_agg.outputs[:,256:384]
-        self.d4 = self.de_agg.outputs[:,384:512]
-        self.d5 = self.de_agg.outputs[:,512:522]
+        self.d1 = self.de_agg[:,0:128]
+        self.d2 = self.de_agg[:,128:256]
+        self.d3 = self.de_agg[:,256:384]
+        self.d4 = self.de_agg[:,384:512]
+        self.d5 = self.de_agg[:,512:522]
 
         self.decoder_cl = VideoDecoder(self.d1, self._args, 'decodercl', is_training=is_training, reuse=reuse)
         self.decoder_cr = VideoDecoder(self.d2, self._args, 'decodercr', is_training=is_training, reuse=reuse)

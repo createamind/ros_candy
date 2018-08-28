@@ -276,11 +276,12 @@ class CarlaGame(object):
 
 	def _on_loop(self):
 		left_image = self.image_getter()
-		if left_image is None:
-			return
 		right_image = self.image2_getter()
 		eyeleft = self.eyeleft_getter()
 		eyeright = self.eyeright_getter()
+		if left_image is None or right_image is None or eyeleft is None or eyeright is None:
+			return
+
 		
 		speed = self.speed_getter()
 		steer = self.steer_getter()
@@ -616,10 +617,10 @@ class WrapperCandy():
 	def all_loader(self, msg):
 		# self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 		# self.image, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
-		self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.eyeback, self.eyefront, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
+		self.image, self.image2, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 
 	def all_publisher(self):
-		msg = msgpack.packb([self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
+		msg = msgpack.packb([self.image, self.image2, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
 		self.all_pub.publish(msg)
 
 if __name__ == '__main__':
@@ -632,6 +633,10 @@ if __name__ == '__main__':
 		'-t', '--train',
 		action='store_true',
 		help='training')
+	argparser.add_argument(
+		'-n', '--no-actor',
+		action='store_true',
+		help='no actor')
 	args = argparser.parse_args()
 
 	rospy.init_node('wrapper_candy')
@@ -653,5 +658,6 @@ if __name__ == '__main__':
 		# print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
 		if not args.load_rosbag_data:
 			wrapper_candy.all_publisher()
-		carla_game.execute()
+		if not args.no_actor:
+			carla_game.execute()
 		rate.sleep()
