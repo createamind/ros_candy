@@ -204,4 +204,3 @@ class PPO(object):
     def save(self, sess):
         if self._saver is not None:
             self._saver.save(sess, os.path.join(sys.path[0], 'savenew/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)
-        

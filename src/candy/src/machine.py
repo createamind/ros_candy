@@ -15,7 +15,7 @@ import msgpack_numpy as m
 m.patch()
 from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
-
+from tqdm import tqdm
 import rospy
 
 import sys
@@ -30,8 +30,8 @@ class Machine(object):
 
         #Building Graph
         self.is_training = tf.placeholder(tf.bool, shape=(None), name='is_training')
-        self.multimodal_train = MultiModal(args, self.is_training, is_test=False)
-        self.multimodal_test = MultiModal(args, self.is_training, is_test=True)
+        self.multimodal_train = MultiModal(False, args, 'multimodal', is_training=self.is_training, reuse=False)
+        self.multimodal_test = MultiModal(True, args, 'multimodal', is_training=self.is_training, reuse=True)
 
         self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
@@ -86,6 +86,7 @@ class Machine(object):
         self.params = []
         for va in tf.trainable_variables():
             self.params.append(va)
+        print(len(self.params), 'params in all!')
 
         print('Model Started!')
 
@@ -132,8 +133,10 @@ class Machine(object):
     
     def update_weights(self, mat):
 
-        for ind, _ in enumerate(self.params):
-            self.sess.run(self.params[ind].assign(mat[ind]))
+        # for ind, _ in tqdm(enumerate(self.params)):
+        #     self.params[ind].load(mat[ind], self.sess)
+        for part in self.variable_restore_parts:
+            part.variable_restore(self.sess)
 
         print('Weights Updated!')
 
@@ -144,8 +147,6 @@ class Machine(object):
         values = np.squeeze(values, 1)
         neglogpacs = np.squeeze(neglogpacs, 1)
         actions = np.squeeze(actions, 1)
-
-        speed = np.array([[ob[1]] for ob in obs])
 
         # print(raw_image.shape)
         # print(speed.shape)
@@ -175,7 +176,7 @@ class Machine(object):
         td_map[self.multimodal_train.eye_right_future] = np.array([ob[0][3] for ob in future_obs])
         td_map[self.multimodal_train.actions_future] = np.array([ob[2] for ob in future_obs])
 
-        td_map[self.speed] = speed
+        td_map[self.speed] = np.array([[ob[1]] for ob in obs])
 
         td_map[self.multimodal_test.camera_left] = np.array([obs[0][0][0]])
         td_map[self.multimodal_test.camera_right] = np.array([obs[0][0][1]])

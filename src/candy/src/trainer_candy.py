@@ -10,6 +10,7 @@ import datetime
 import functools
 import sys
 import os
+import copy
 
 from candy.srv import Step, Value, UpdateWeights
 from std_msgs.msg import String
@@ -31,7 +32,7 @@ from machine import Machine
 
 
 TRAIN_EPOCH = 30
-BATCH_SIZE = 2
+BATCH_SIZE = 32
 global_step = 0
 batch = []
 
@@ -50,21 +51,21 @@ if __name__ == '__main__':
 		global global_step	
 		if len(batch) > 1000:
 			batch = batch[:1000]
-		if global_step % 1000 == 0:
+		if global_step % (TRAIN_EPOCH * 30) == 0:
 			batch = []
 		l = len(obs)
-		for i in range(l - 8):
-			future_obs = obs[i+8]
-			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
-		for i in range(l - 8, l):
-			future_obs = ( [np.zeros([160, 160, 8, 3]) for i in range(4)], 0.0, np.zeros([8, 2]) )
-			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
+		for i in range(l - 12):
+			future_obs = obs[i+12]
+			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
+		for i in range(l - 12, l):
+			future_obs = ( [np.zeros([160, 160, 12, 3]) for i in range(4)], 0.0, np.zeros([12, 2]) )
+			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
 
 		# print(self.rewards)
 		# print(self.values)
 		# print(np.array(self.rewards) - np.array([i[0] for i in self.values]))
 		batch = sorted(batch, key = lambda y: y[0], reverse=True)
-		print([t[0] for t in batch[:20]])
+		print('Difficulty !', [t[0] for t in batch[:5]])
 		# difficulty = np.array(difficulty)
 		# print(difficulty[-20:])
 		# def softmax(x):
@@ -92,9 +93,9 @@ if __name__ == '__main__':
 			try:
 				update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)
 
-				param = []
-				for each in machine.params:
-					param.append(np.array(each.eval(session=machine.sess)))
+				param = machine.sess.run(machine.params)
+				# for each in tqdm(machine.params):
+				# 	param.append(np.array(each.eval(session=machine.sess)))
 				# param = np.array(param)
 				outmsg = msgpack.packb(param, use_bin_type=True)
 				print('Update weights called!')

@@ -10,7 +10,7 @@ from cv_bridge import CvBridge
 import cv2
 import numpy as np
 import tensorflow as tf
-
+import copy
 
 from candy.srv import Step, Value, UpdateWeights
 
@@ -56,29 +56,29 @@ except ImportError:
 
 WINDOW_WIDTH = 160
 WINDOW_HEIGHT = 160
-BUFFER_LIMIT = 200
+BUFFER_LIMIT = 100
 
 
 class Carla_Wrapper(object):
 
 	def __init__(self, gamma=0.99, lam=0.95, nlstm=10):
 		self.global_step = 0
-
+		self.nlstm = nlstm
 		self.lam = lam
 		self.gamma = gamma
 		self.state = np.zeros((1, nlstm*2), dtype=np.float32)
 
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(7)] for j in range(4)]
-		self.last_control = [[0.0, 0.0] for i in range(7)]
+		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(11)] for j in range(4)]
+		self.last_control = [[0.0, 0.0] for i in range(11)]
 		self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
 
 	def clear(self):
-		self.state = np.zeros((1, nlstm*2), dtype=np.float32)
+		self.state = np.zeros((1, self.nlstm*2), dtype=np.float32)
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(7)] for j in range(4)]
-		self.last_control = [[0.0, 0.0] for i in range(7)]
+		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(11)] for j in range(4)]
+		self.last_control = [[0.0, 0.0] for i in range(11)]
 
 	def update_reward(self, cnt, obs, action, reward):
 		l = len(self.obs)
@@ -108,14 +108,15 @@ class Carla_Wrapper(object):
 
 		images, control, reward, std_control, manual, speed = inputs
 		frame = [None] * 4
-		images = np.copy(images)
-		for i, image in enumerate(images):
-			images[i] = image.astype(np.float32) / 128 - 1
-			nowframe = np.expand_dims(image, 2)
+		images = copy.deepcopy(images)
+		# print(images[0])
+		for i, _ in enumerate(images):
+			images[i] = images[i].astype(np.float32) / 128 - 1
+			nowframe = np.expand_dims(images[i], 2)
 			frame[i] = np.concatenate(self.last_frame[i] + [nowframe], 2)
-			if refresh:
+			if refresh == True:
 				self.last_frame[i] = self.last_frame[i][1:] + [nowframe]
-		obs = [frame, speed, np.array(self.last_control + [[0.0,0.0]])]
+		obs = [copy.deepcopy(frame), copy.deepcopy(speed), np.array(self.last_control + [[0.0,0.0]])]
 		return obs, reward, control, std_control, manual
 		
 
