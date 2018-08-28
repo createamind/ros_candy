@@ -54,9 +54,9 @@ try:
 except ImportError:
 	raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
-WINDOW_WIDTH = 320
-WINDOW_HEIGHT = 320
-BUFFER_LIMIT = 20
+WINDOW_WIDTH = 160
+WINDOW_HEIGHT = 160
+BUFFER_LIMIT = 200
 
 
 class Carla_Wrapper(object):
@@ -69,14 +69,15 @@ class Carla_Wrapper(object):
 		self.state = np.zeros((1, nlstm*2), dtype=np.float32)
 
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-		self.last_frame = [[np.zeros([320,320,1,3]) for i in range(7)] for j in range(4)]
+		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(7)] for j in range(4)]
 		self.last_control = [[0.0, 0.0] for i in range(7)]
 		self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
 
 	def clear(self):
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-		self.last_frame = [[np.zeros([320,320,1,3]) for i in range(7)] for j in range(4)]
+		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(7)] for j in range(4)]
+		self.last_control = [[0.0, 0.0] for i in range(7)]
 
 	def update_reward(self, cnt, obs, action, reward):
 		l = len(self.obs)
@@ -302,7 +303,7 @@ class CarlaGame(object):
 
 		if len(np.array(model_control).shape) != 1:
 			model_control = model_control[0]
-		print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" %  (control[0], model_control[0], control[1], model_control[1]))
+		print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" % (control[0], model_control[0], control[1], model_control[1]))
 		if manual:
 			print("Human!")
 		else:
@@ -427,11 +428,11 @@ class WrapperCandy():
 
 		self._sub = rospy.Subscriber('/stereo/left/image_raw', Image, self.load_image, queue_size=1)
 		self._subb = rospy.Subscriber('/stereo/right/image_raw', Image, self.load_image2, queue_size=1)
-		self._subb1 = rospy.Subscriber('/rslidar_points', PointCloud2, self.load_lidar, queue_size=1)
+		# self._subb1 = rospy.Subscriber('/rslidar_points', PointCloud2, self.load_lidar, queue_size=1)
 		self._subb2 = rospy.Subscriber('/multiple/webcam3/image_raw', Image, self.load_eyeleft, queue_size=1)
 		self._subb3 = rospy.Subscriber('/multiple/webcam1/image_raw', Image, self.load_eyeright, queue_size=1)
-		self._subb4 = rospy.Subscriber('/multiple/webcam0/image_raw', Image, self.load_eyeback, queue_size=1)
-		self._subb5 = rospy.Subscriber('/multiple/webcam2/image_raw', Image, self.load_eyefront, queue_size=1)
+		# self._subb4 = rospy.Subscriber('/multiple/webcam0/image_raw', Image, self.load_eyeback, queue_size=1)
+		# self._subb5 = rospy.Subscriber('/multiple/webcam2/image_raw', Image, self.load_eyefront, queue_size=1)
 
 		self._sub2 = rospy.Subscriber('/current_speed', Float32, self.load_speed, queue_size=1)
 		self._sub3 = rospy.Subscriber('/current_steer', Float32, self.load_steer, queue_size=1)
@@ -460,11 +461,19 @@ class WrapperCandy():
 
 	def image_getter(self):
 		def func():
-			return self.image
+			if self.image is None:
+				return None
+			image = self.image[130:, :]
+			image = cv2.resize(image, (160,160))
+			return image		
 		return func
 	def image2_getter(self):
 		def func():
-			return self.image2
+			if self.image2 is None:
+				return None
+			image = self.image2[130:, :]
+			image = cv2.resize(image, (160,160))
+			return image
 		return func
 	def lidar_getter(self):
 		def func():
@@ -472,11 +481,19 @@ class WrapperCandy():
 		return func
 	def eyeleft_getter(self):
 		def func():
-			return self.eyeleft
+			if self.eyeleft is None:
+				return None
+			image = self.eyeleft[130:, :]
+			image = cv2.resize(image, (160,160))
+			return image
 		return func
 	def eyeright_getter(self):
 		def func():
-			return self.eyeright
+			if self.eyeright is None:
+				return None
+			image = self.eyeright[130:, :]
+			image = cv2.resize(image, (160,160))
+			return image
 		return func
 
 	def eyeback_getter(self):
@@ -487,6 +504,7 @@ class WrapperCandy():
 	def eyefront_getter(self):
 		def func():
 			return self.eyefront
+		return func
 
 	def speed_getter(self):
 		def func():
@@ -553,19 +571,22 @@ class WrapperCandy():
 		self.eyeright = image
 
 	def load_eyeback(self, image_msg):
-		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
-		cv_image = cv2.resize(cv_image,(320,320))
-		cv_image = cv2.flip(cv_image, -1)
-		# print(cv_image)
-		image = cv_image[...,::-1]
-		self.eyeback = image
+		# cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		# cv_image = cv2.resize(cv_image,(320,320))
+		# cv_image = cv2.flip(cv_image, -1)
+		# # print(cv_image)
+		# image = cv_image[...,::-1]
+		self.eyeback = None
+		return
+
  	def load_eyefront(self, image_msg):
-		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
-		cv_image = cv2.resize(cv_image,(320,320))
-		cv_image = cv2.flip(cv_image, -1)
-		# print(cv_image)
-		image = cv_image[...,::-1]
-		self.eyefront = image
+		# cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		# cv_image = cv2.resize(cv_image,(320,320))
+		# cv_image = cv2.flip(cv_image, -1)
+		# # print(cv_image)
+		# image = cv_image[...,::-1]
+		self.eyefront = None
+		return
 
  	def load_lidar(self, ros_cloud):
 		self.lidar = None
@@ -584,7 +605,7 @@ class WrapperCandy():
 		for _ in range(1000000):
 			for v in result:
 				image = cv2.imread(v)
-				image = cv2.resize(image,(320,320))
+				image = cv2.resize(image,(160,160))
 				image = image[...,::-1]
 				yield image
 

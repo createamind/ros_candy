@@ -32,9 +32,9 @@ class VideoEncoder(Module):
                 kernel_initializer=tf.contrib.layers.xavier_initializer()), training=is_training))
             
             # x = B * 80 * 80 * 4 * 32
-            x = tf.nn.relu(tf.layers.batch_normalization(tf.layers.conv3d(x, 16, [4, 4, 4], strides=(2, 2, 1), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()), training=is_training))
+            # x = tf.nn.relu(tf.layers.batch_normalization(tf.layers.conv3d(x, 16, [4, 4, 4], strides=(2, 2, 1), padding='SAME', 
+            #     kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
+            #     kernel_initializer=tf.contrib.layers.xavier_initializer()), training=is_training))
 
             # x = B * 40 * 40 * 4 * 64
             x = tf.nn.relu(tf.layers.batch_normalization(tf.layers.conv3d(x, 16, [4, 4, 4], strides=(2, 2, 1), padding='SAME', 

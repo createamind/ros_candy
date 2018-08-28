@@ -29,9 +29,9 @@ class VideoDecoder(Module):
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()), training=is_training))
 
-            x = tf.nn.relu(tf.layers.batch_normalization(tf.layers.conv3d_transpose(x, 8, [4, 4, 4], strides=(2, 2, 1), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()), training=is_training))
+            # x = tf.nn.relu(tf.layers.batch_normalization(tf.layers.conv3d_transpose(x, 8, [4, 4, 4], strides=(2, 2, 1), padding='SAME', 
+            #     kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
+            #     kernel_initializer=tf.contrib.layers.xavier_initializer()), training=is_training))
 
             x = tf.nn.relu(tf.layers.batch_normalization(tf.layers.conv3d_transpose(x, 8, [4, 4, 4], strides=(2, 2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),

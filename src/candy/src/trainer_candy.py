@@ -54,20 +54,10 @@ if __name__ == '__main__':
 			batch = []
 		l = len(obs)
 		for i in range(l - 8):
-			# obs[i] = [ np.concatenate([obs[i][j][:,:,:3], np.zeros([320,320,1]), obs[i][j][:,:,3:6], np.zeros([320,320,1])], axis=2) for j in range(len(obs[i]))]
-			# print(obs[i][0].shape)
-			# future_frame = []
-			# for j in range(i+1, i+9):
-			# 	print(obs[j][0].shape)
-			# 	future_frame.append(np.array(obs[j][0][:,:,-1,:]))
-			# future_frame = np.concatenate(future_frame, 2)
-			# print(future_frame.shape)
 			future_obs = obs[i+8]
-			print(np.array(future_obs[0]).shape, np.array(future_obs[1]).shape, np.array(future_obs[2]).shape)
 			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
 		for i in range(l - 8, l):
-			future_obs = [[ [np.zeros([320, 320, 8, 3]) for i in range(4)], 0, [0, 0]] for j in range(8)]
-			print(np.array(future_obs[0]).shape, np.array(future_obs[1]).shape, np.array(future_obs[2]).shape)
+			future_obs = ( [np.zeros([160, 160, 8, 3]) for i in range(4)], 0.0, np.zeros([8, 2]) )
 			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
 
 		# print(self.rewards)

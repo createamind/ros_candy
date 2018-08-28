@@ -16,16 +16,16 @@ class MultiModal(object):
         batch_size = 1 if is_test else args['batch_size']
 
         #Placeholders:
-        self.camera_left = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_left')
-        self.camera_right = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_right')
-        self.eye_left = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_left')
-        self.eye_right = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_right')
+        self.camera_left = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='camera_left')
+        self.camera_right = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='camera_right')
+        self.eye_left = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='eye_left')
+        self.eye_right = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='eye_right')
         self.actions = tf.placeholder(tf.float32, shape=(batch_size, 8, 2), name='actions')
         if is_test == False:
-            self.camera_left_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_left_future')
-            self.camera_right_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_right_future')
-            self.eye_left_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_left_future')
-            self.eye_right_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_right_future')
+            self.camera_left_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='camera_left_future')
+            self.camera_right_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='camera_right_future')
+            self.eye_left_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='eye_left_future')
+            self.eye_right_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='eye_right_future')
             self.actions_future = tf.reshape(tf.placeholder(tf.float32, shape=(batch_size, 8, 2), name='actions_future'), [batch_size, 16])
 
         self.parts = []
