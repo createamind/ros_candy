@@ -2,6 +2,8 @@
 from __future__ import print_function, absolute_import, division
 import rospy
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, PointCloud2
+from sensor_msgs import point_cloud2 as pc2
 from std_msgs.msg import Int16, String, Float32
 from cv_bridge import CvBridge
 
@@ -54,7 +56,7 @@ except ImportError:
 
 WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
-BUFFER_LIMIT = 200
+BUFFER_LIMIT = 20
 
 
 class Carla_Wrapper(object):
@@ -68,7 +70,7 @@ class Carla_Wrapper(object):
 
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
 		self.last_frame = [[np.zeros([320,320,1,3]) for i in range(7)] for j in range(4)]
-
+		self.last_control = [[0.0, 0.0] for i in range(7)]
 		self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
 
@@ -97,20 +99,22 @@ class Carla_Wrapper(object):
 		print('Start Memory Replay')
 		self.memory_training()
 		print('Memory Replay Done')
+		time.sleep(1) # Time for sending train data
 
 
 	def pre_process(self, inputs, refresh=False):
 
 		images, control, reward, std_control, manual, speed = inputs
 		frame = [None] * 4
+		images = np.copy(images)
 		for i, image in enumerate(images):
 			images[i] = image.astype(np.float32) / 128 - 1
 			nowframe = np.expand_dims(image, 2)
 			frame[i] = np.concatenate(self.last_frame[i] + [nowframe], 2)
 			self.last_frame[i] = self.last_frame[i][1:] + [nowframe]
 
-		obs = [frame, speed, control]
-		
+		obs = [frame, speed, np.array(self.last_control + [control])]
+		self.last_control = self.last_control[1:] + [control]
 		return obs, reward, control, std_control, manual
 		
 
@@ -176,6 +180,10 @@ class Carla_Wrapper(object):
 			action, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
 			# print(action)
 		except rospy.ServiceException as e:
+			action = [0,0]
+			value = 0
+			neglogpacs = 0
+			vaerecon = 0
 			print("Service call failed: %s" % e)
 
 		self.states.append(self.state)
@@ -212,7 +220,7 @@ class Carla_Wrapper(object):
 	# 	return 0 # do nothing
 
 class CarlaGame(object):
-	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, eyeleft_getter, eyeright_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
+	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, eyeleft_getter, eyeright_getter, eyeback_getter, eyefront_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
 		self._timer = None
 		self._display = None
 		self.images = None
@@ -228,9 +236,12 @@ class CarlaGame(object):
 
 		self.image_getter = image_getter
 		self.image2_getter = image2_getter
-		self.lidar_getter = lidar_getter
+		# self.lidar_getter = lidar_getter
 		self.eyeleft_getter = eyeleft_getter
 		self.eyeright_getter = eyeright_getter
+		# self.eyeback_getter = eyeback_getter
+		# self.eyefront_getter = eyefront_getter
+
 
 		self.throttle_publisher = throttle_publisher
 		self.steer_publisher = steer_publisher
@@ -259,13 +270,12 @@ class CarlaGame(object):
 		return reward
 
 	def _on_loop(self):
-		self.left_image = self.image_getter()
-		if self.left_image is None:
+		left_image = self.image_getter()
+		if left_image is None:
 			return
-
-		self.right_image = self.image2_getter()
-		self.eyeleft = self.eyeleft_getter()
-		self.eyeright = self.eyeright_getter()
+		right_image = self.image2_getter()
+		eyeleft = self.eyeleft_getter()
+		eyeright = self.eyeright_getter()
 		
 		speed = self.speed_getter()
 		steer = self.steer_getter()
@@ -285,7 +295,7 @@ class CarlaGame(object):
 		self.history_steer = steer
 
 		control = [brake_throttle, steer]
-		self.images = [self.left_image, self.right_image, self.eyeleft, self.eyeright]
+		self.images = [left_image, right_image, eyeleft, eyeright]
 
 		self.cnt += 1
 		model_control = self.carla_wrapper.get_control_and_update([self.images, control, reward, control, manual, speed])
@@ -384,26 +394,26 @@ class CarlaGame(object):
 		return [th, steer], reward
 
 	def _on_render(self):
-		if self.should_display == False:
+		if self.should_display == False or self.images is None:
 			return
-
-		if self.left_image is not None:
-			array = self.left_image
+		left_image, right_image, eyeleft, eyeright = self.images
+		if left_image is not None:
+			array = left_image
 			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 			self._display.blit(surface, (0, 0))
 
-		if self.right_image is not None:
-			array = self.right_image
+		if right_image is not None:
+			array = right_image
 			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 			self._display.blit(surface, (WINDOW_WIDTH, 0))
 
-		if self.eyeleft is not None:
-			array = self.eyeleft
+		if eyeleft is not None:
+			array = eyeleft
 			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 			self._display.blit(surface, (0, WINDOW_HEIGHT))
 
-		if self.eyeright is not None:
-			array = self.eyeright
+		if eyeright is not None:
+			array = eyeright
 			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 			self._display.blit(surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
@@ -415,11 +425,13 @@ class WrapperCandy():
 	def __init__(self, load_mode = False):
 		self._cv_bridge = CvBridge()
 
-		self._sub = rospy.Subscriber('/camera/image_raw', Image, self.load_image, queue_size=1)
-		self._subb = rospy.Subscriber('/camera2/image_raw', Image, self.load_image2, queue_size=1)
-		self._subb1 = rospy.Subscriber('/lidar/image_raw', Image, self.load_lidar, queue_size=1)
-		self._subb2 = rospy.Subscriber('/eyeleft/image_raw', Image, self.load_eyeleft, queue_size=1)
-		self._subb3 = rospy.Subscriber('/eyeright/image_raw', Image, self.load_eyeright, queue_size=1)
+		self._sub = rospy.Subscriber('/stereo/left/image_raw', Image, self.load_image, queue_size=1)
+		self._subb = rospy.Subscriber('/stereo/right/image_raw', Image, self.load_image2, queue_size=1)
+		self._subb1 = rospy.Subscriber('/rslidar_points', PointCloud2, self.load_lidar, queue_size=1)
+		self._subb2 = rospy.Subscriber('/multiple/webcam3/image_raw', Image, self.load_eyeleft, queue_size=1)
+		self._subb3 = rospy.Subscriber('/multiple/webcam1/image_raw', Image, self.load_eyeright, queue_size=1)
+		self._subb4 = rospy.Subscriber('/multiple/webcam0/image_raw', Image, self.load_eyeback, queue_size=1)
+		self._subb5 = rospy.Subscriber('/multiple/webcam2/image_raw', Image, self.load_eyefront, queue_size=1)
 
 		self._sub2 = rospy.Subscriber('/current_speed', Float32, self.load_speed, queue_size=1)
 		self._sub3 = rospy.Subscriber('/current_steer', Float32, self.load_steer, queue_size=1)
@@ -438,6 +450,8 @@ class WrapperCandy():
 		self.lidar = None
 		self.eyeleft = None
 		self.eyeright = None
+		self.eyeback = None
+		self.eyefront = None
 
 		self.speed = 0
 		self.steer = 0
@@ -462,8 +476,17 @@ class WrapperCandy():
 		return func
 	def eyeright_getter(self):
 		def func():
-			return self.eyeright_getter
+			return self.eyeright
 		return func
+
+	def eyeback_getter(self):
+		def func():
+			return self.eyeback
+		return func
+
+	def eyefront_getter(self):
+		def func():
+			return self.eyefront
 
 	def speed_getter(self):
 		def func():
@@ -529,9 +552,28 @@ class WrapperCandy():
 		image = cv_image[...,::-1]
 		self.eyeright = image
 
-	def load_lidar(self, image_msg):
-		print(image_msg)
-		self.lidar = image_msg
+	def load_eyeback(self, image_msg):
+		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		cv_image = cv2.resize(cv_image,(320,320))
+		cv_image = cv2.flip(cv_image, -1)
+		# print(cv_image)
+		image = cv_image[...,::-1]
+		self.eyeback = image
+ 	def load_eyefront(self, image_msg):
+		cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
+		cv_image = cv2.resize(cv_image,(320,320))
+		cv_image = cv2.flip(cv_image, -1)
+		# print(cv_image)
+		image = cv_image[...,::-1]
+		self.eyefront = image
+
+ 	def load_lidar(self, ros_cloud):
+		self.lidar = None
+		return
+		# points_list = []
+		# for data in pc2.read_points(ros_cloud, skip_nans=True):
+		# 	points_list.append([data[0], data[1], data[2], data[3]])
+		# self.lidar = points_list
 
 	def train_image_load(self):
 		PATH = '/data/forvae'
@@ -548,7 +590,8 @@ class WrapperCandy():
 
 	def all_loader(self, msg):
 		# self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
-		self.image, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
+		# self.image, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
+		self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.eyeback, self.eyefront, self.speed, self.steer, self.is_auto, self.brake_throttle = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 
 	def all_publisher(self):
 		msg = msgpack.packb([self.image, self.image2, self.lidar, self.eyeleft, self.eyeright, self.speed, self.steer, self.is_auto, self.brake_throttle], use_bin_type=True)
@@ -566,10 +609,11 @@ if __name__ == '__main__':
 	wrapper_candy = WrapperCandy(args.load_rosbag_data)
 	carla_wrapper = Carla_Wrapper()
 
-	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.image2_getter(), 
-		wrapper_candy.lidar_getter(), wrapper_candy.eyeleft_getter(), wrapper_candy.eyeright_getter(), 
-		wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), 
-		wrapper_candy.is_auto_getter(), wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
+
+	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.image2_getter(), wrapper_candy.lidar_getter(), 
+	wrapper_candy.eyeleft_getter(), wrapper_candy.eyeright_getter(), wrapper_candy.eyeback_getter(), wrapper_candy.eyefront_getter(), 
+	wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), 
+	wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
 
 
 	rate = rospy.Rate(10) # 10hz

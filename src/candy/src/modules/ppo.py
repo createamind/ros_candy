@@ -146,7 +146,7 @@ class PPO(object):
 
 		imitation_loss = tf.reduce_mean(tf.boolean_mask(imitation_loss, self.std_mask))
 		imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
-		loss = 0 * loss + self.args['imitation_coefficient'] * imitation_loss
+		loss = loss + self.args['imitation_coefficient'] * imitation_loss
    
 		tf.summary.scalar('actionloss', action_loss)
 		tf.summary.scalar('valueloss', value_loss)
@@ -191,7 +191,7 @@ class PPO(object):
 
 	def variable_restore(self, sess):
 
-		model_filename = os.path.join(sys.path[0], "save/", self._name)
+		model_filename = os.path.join(sys.path[0], "savenew/", self._name)
 		# if os.path.isfile(model_filename + '.meta'):
 		# 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
 		# 	self.saver.restore(sess, model_filename)

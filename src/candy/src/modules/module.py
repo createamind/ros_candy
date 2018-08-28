@@ -31,7 +31,11 @@ class Module(object):
             self.outputs = self._build_net(is_training, reuse)
 
         #Variable saver
-        self._saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name))
+        collection = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name)
+        if len(collection) > 0:
+            self._saver = tf.train.Saver(collection)
+        else:
+            self._saver = None
 
     def _build_net(self, is_training, reuse):
         r"""Build the graph. The function should be overwritten by sub-classes.
@@ -74,7 +78,8 @@ class Module(object):
             sess (tf.Session): The session.
 
         """
-        model_filename = os.path.join(sys.path[0], "save/", self._name)
-        if os.path.isfile(model_filename + '.data-00000-of-00001'):
-            self._saver.restore(sess, model_filename)
-            return
+        if not (self._saver is None):
+            model_filename = os.path.join(sys.path[0], "savenew/", self._name)
+            if os.path.isfile(model_filename + '.data-00000-of-00001'):
+                self._saver.restore(sess, model_filename)
+                return

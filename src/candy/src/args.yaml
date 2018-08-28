@@ -5,6 +5,58 @@ vae:
 ppo:
     learning_rate: 0.0005
     weight_decay: 0.001
+encodercl:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+encodercr:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+encoderel:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+encoderer:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+encoderac:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+aggregation:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+de_aggregation:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decodercl:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decodercr:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderel:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderer:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderac:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decodercl_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decodercr_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderel_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderer_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderac_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+
 imitation_coefficient: 0.9
 batch_size: 32
 x_dim: 320

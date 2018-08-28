@@ -63,15 +63,17 @@ if __name__ == '__main__':
 			# future_frame = np.concatenate(future_frame, 2)
 			# print(future_frame.shape)
 			future_obs = obs[i+8]
+			print(np.array(future_obs[0]).shape, np.array(future_obs[1]).shape, np.array(future_obs[2]).shape)
 			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
 		for i in range(l - 8, l):
-			future_obs = [ [np.zeros([320, 320, 8, 3]) for i in range(4)], 0, [0, 0]]
+			future_obs = [[ [np.zeros([320, 320, 8, 3]) for i in range(4)], 0, [0, 0]] for j in range(8)]
+			print(np.array(future_obs[0]).shape, np.array(future_obs[1]).shape, np.array(future_obs[2]).shape)
 			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], np.copy(future_obs)]) )
 
 		# print(self.rewards)
 		# print(self.values)
 		# print(np.array(self.rewards) - np.array([i[0] for i in self.values]))
-		batch = sorted(batch, reverse=True)
+		batch = sorted(batch, key = lambda y: y[0], reverse=True)
 		print([t[0] for t in batch[:20]])
 		# difficulty = np.array(difficulty)
 		# print(difficulty[-20:])

@@ -29,12 +29,12 @@ class Machine(object):
         self.args = args
 
         #Building Graph
-        self.is_training = tf.placeholder(tf.bool, shape=(None))
+        self.is_training = tf.placeholder(tf.bool, shape=(None), name='is_training')
         self.multimodal_train = MultiModal(args, self.is_training, is_test=False)
         self.multimodal_test = MultiModal(args, self.is_training, is_test=True)
 
-        self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1))
-        self.test_speed = tf.placeholder(tf.float32, shape=(1, 1))
+        self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1), name='speed')
+        self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
 
         z = self.multimodal_train.mean
         test_z = self.multimodal_test.mean
@@ -191,5 +191,5 @@ class Machine(object):
     def save(self):
         print('Start Saving')
         for i in self.variable_save_optimize_parts:
-            i.saver.save(self.sess, os.path.join(sys.path[0], 'save', str(i._name)), global_step=None, write_meta_graph=False, write_state=False)
+            i.saver.save(self.sess, os.path.join(sys.path[0], 'savenew', str(i._name)), global_step=None, write_meta_graph=False, write_state=False)
         print('Saving Done.')

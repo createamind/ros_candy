@@ -16,18 +16,17 @@ class MultiModal(object):
         batch_size = 1 if is_test else args['batch_size']
 
         #Placeholders:
-        self.camera_left = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-        self.camera_right = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-        self.eye_left = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-        self.eye_right = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-        self.actions = tf.reshape(tf.placeholder(tf.float32, shape=(batch_size, 2, 8)), [batch_size, 16])
-
+        self.camera_left = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_left')
+        self.camera_right = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_right')
+        self.eye_left = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_left')
+        self.eye_right = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_right')
+        self.actions = tf.placeholder(tf.float32, shape=(batch_size, 8, 2), name='actions')
         if is_test == False:
-            self.camera_left_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-            self.camera_right_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-            self.eye_left_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-            self.eye_right_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3))
-            self.actions_future = tf.reshape(tf.placeholder(tf.float32, shape=(batch_size, 2, 8)), [batch_size, 16])
+            self.camera_left_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_left_future')
+            self.camera_right_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='camera_right_future')
+            self.eye_left_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_left_future')
+            self.eye_right_future = tf.placeholder(tf.float32, shape=(batch_size, 320, 320, 8, 3), name='eye_right_future')
+            self.actions_future = tf.reshape(tf.placeholder(tf.float32, shape=(batch_size, 8, 2), name='actions_future'), [batch_size, 16])
 
         self.parts = []
         #Encoder
@@ -35,7 +34,7 @@ class MultiModal(object):
         self.encoder_cr = VideoEncoder(self.camera_right, args, 'encodercr', is_training=is_training, reuse=is_test)
         self.encoder_el = VideoEncoder(self.eye_left, args, 'encoderel', is_training=is_training, reuse=is_test)
         self.encoder_er = VideoEncoder(self.eye_right, args, 'encoderer', is_training=is_training, reuse=is_test)
-        self.encoder_ac = MLP(self.actions, [10], args, 'encoderac', is_training=is_training, reuse=is_test)
+        self.encoder_ac = MLP(tf.reshape(self.actions, [batch_size, 16]), [10], args, 'encoderac', is_training=is_training, reuse=is_test)
         self.parts += [self.encoder_cl, self.encoder_cr, self.encoder_el, self.encoder_er, self.encoder_ac]
 
         agg = tf.concat([self.encoder_cl.outputs, self.encoder_cr.outputs, self.encoder_el.outputs, self.encoder_er.outputs, self.encoder_ac.outputs], 1)
@@ -81,7 +80,7 @@ class MultiModal(object):
         self.cr_recons = MSELoss(self.decoder_cr.outputs, self.camera_right, args, 'cr_recons_loss', is_training=is_training, reuse=is_test)
         self.el_recons = MSELoss(self.decoder_el.outputs, self.eye_left, args, 'el_recons_loss', is_training=is_training, reuse=is_test)
         self.er_recons = MSELoss(self.decoder_er.outputs, self.eye_right, args, 'er_recons_loss', is_training=is_training, reuse=is_test)
-        self.ac_recons = MSELoss(self.decoder_ac.outputs, self.actions, args, 'ac_recons_loss', is_training=is_training, reuse=is_test)
+        self.ac_recons = MSELoss(self.decoder_ac.outputs, tf.reshape(self.actions, [batch_size, 16]), args, 'ac_recons_loss', is_training=is_training, reuse=is_test)
 
         self.loss = 250 * self.vae_loss.outputs + self.cl_recons.outputs + self.cr_recons.outputs + self.el_recons.outputs + self.er_recons.outputs + self.ac_recons.outputs
         
@@ -90,7 +89,7 @@ class MultiModal(object):
             self.cr_future = MSELoss(self.decoder_cr_future.outputs, self.camera_right_future, args, 'cr_future_loss', is_training=is_training, reuse=is_test)
             self.el_future = MSELoss(self.decoder_el_future.outputs, self.eye_left_future, args, 'el_future_loss', is_training=is_training, reuse=is_test)
             self.er_future = MSELoss(self.decoder_er_future.outputs, self.eye_right_future, args, 'er_future_loss', is_training=is_training, reuse=is_test)
-            self.ac_future = MSELoss(self.decoder_ac_future.outputs, self.actions_future, args, 'ac_future_loss', is_training=is_training, reuse=is_test)
+            self.ac_future = MSELoss(self.decoder_ac_future.outputs, tf.reshape(self.actions_future, [batch_size, 16]), args, 'ac_future_loss', is_training=is_training, reuse=is_test)
 
             self.loss += self.cl_future.outputs + self.cr_future.outputs + self.el_future.outputs + self.er_future.outputs + self.ac_future.outputs
 
@@ -100,6 +99,8 @@ class MultiModal(object):
         for part in self.parts:
             self.ops.append(part.optimize(loss))
         self.ops = tf.group(self.ops)
+
+        return self.ops
  
     def variable_restore(self, sess):
         for part in self.parts:
