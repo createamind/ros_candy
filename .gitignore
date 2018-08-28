@@ -4,6 +4,7 @@ rospy
 devel/
 build/
 save/
+save2/
 logs/
 src/candy/src/logs
 .catkin*
