@@ -132,7 +132,7 @@ class Machine(object):
     
     def update_weights(self, mat):
 
-        for ind, each in enumerate(self.params):
+        for ind, _ in enumerate(self.params):
             self.sess.run(self.params[ind].assign(mat[ind]))
 
         print('Weights Updated!')
@@ -190,6 +190,6 @@ class Machine(object):
 
     def save(self):
         print('Start Saving')
-        for i in self.variable_parts2:
+        for i in self.variable_save_optimize_parts:
             i.saver.save(self.sess, os.path.join(sys.path[0], 'save', str(i._name)), global_step=None, write_meta_graph=False, write_state=False)
         print('Saving Done.')

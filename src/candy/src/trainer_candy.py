@@ -1,19 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
-# from modules.c3d import C3D_Encoder
-
-# from modules.policy_gradient import PG, PGLoss
-
-# from modules.deconv import ImageDecoder
-
-from modules.losses import MSELoss, CrossEntropyLoss
-
-from modules.networks import MLP
-
-from modules.vae import VAE, VAELoss
-
-from modules.ppo import PPO, LstmPolicy
 import random
 import tensorflow as tf
 import numpy as np

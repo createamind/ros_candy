@@ -54,8 +54,6 @@ except ImportError:
 
 WINDOW_WIDTH = 320
 WINDOW_HEIGHT = 320
-MINI_WINDOW_WIDTH = 200
-MINI_WINDOW_HEIGHT = 200
 BUFFER_LIMIT = 200
 
 
@@ -92,7 +90,7 @@ class Carla_Wrapper(object):
 
 	def post_process(self, inputs, cnt):
 
-		obs, reward, action, std_action, manual = self.pre_process(inputs)
+		obs, reward, action, _, _ = self.pre_process(inputs)
 		self.update_reward(cnt, obs, action, reward)
 
 		print(self.rewards[-20:])
@@ -244,7 +242,7 @@ class CarlaGame(object):
 		self.is_auto_getter = is_auto_getter
 
 		self._display = pygame.display.set_mode(
-			(WINDOW_WIDTH, WINDOW_HEIGHT),
+			(WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2),
 			pygame.HWSURFACE | pygame.DOUBLEBUF)
 
 	def execute(self):
@@ -388,11 +386,26 @@ class CarlaGame(object):
 	def _on_render(self):
 		if self.should_display == False:
 			return
-		if self._main_image is not None:
-			array = self._main_image
-			# print(array.shape)
+
+		if self.left_image is not None:
+			array = self.left_image
 			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 			self._display.blit(surface, (0, 0))
+
+		if self.right_image is not None:
+			array = self.right_image
+			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+			self._display.blit(surface, (WINDOW_WIDTH, 0))
+
+		if self.eyeleft is not None:
+			array = self.eyeleft
+			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+			self._display.blit(surface, (0, WINDOW_HEIGHT))
+
+		if self.eyeright is not None:
+			array = self.eyeright
+			surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+			self._display.blit(surface, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
 		pygame.display.flip()
 
