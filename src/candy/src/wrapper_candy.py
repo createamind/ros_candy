@@ -93,7 +93,7 @@ class Carla_Wrapper(object):
 
 	def post_process(self, inputs, cnt):
 
-		obs, reward, action, _, _ = self.pre_process(inputs)
+		obs, reward, action, _, _ = self.pre_process(inputs, refresh=False)
 		self.update_reward(cnt, obs, action, reward)
 
 		print(self.rewards[-20:])
@@ -112,10 +112,9 @@ class Carla_Wrapper(object):
 			images[i] = image.astype(np.float32) / 128 - 1
 			nowframe = np.expand_dims(image, 2)
 			frame[i] = np.concatenate(self.last_frame[i] + [nowframe], 2)
-			self.last_frame[i] = self.last_frame[i][1:] + [nowframe]
-
-		obs = [frame, speed, np.array(self.last_control + [control])]
-		self.last_control = self.last_control[1:] + [control]
+			if refresh:
+				self.last_frame[i] = self.last_frame[i][1:] + [nowframe]
+		obs = [frame, speed, np.array(self.last_control + [[0.0,0.0]])]
 		return obs, reward, control, std_control, manual
 		
 
@@ -181,17 +180,18 @@ class Carla_Wrapper(object):
 			action, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
 			# print(action)
 		except rospy.ServiceException as e:
-			action = [0,0]
-			value = 0
-			neglogpacs = 0
-			vaerecon = 0
 			print("Service call failed: %s" % e)
+			return [0,0]
 
 		self.states.append(self.state)
 
 		# Change obs
-		if not manual:
-			obs[2] = action
+		if manual:
+			obs[2] = np.array(self.last_control + [std_action])
+			self.last_control = self.last_control[1:] + [std_action]
+		else:
+			obs[2] = np.array(self.last_control + [action[0]])
+			self.last_control = self.last_control[1:] + [action[0]]
 
 		self.obs.append(obs)
 		self.actions.append(action)

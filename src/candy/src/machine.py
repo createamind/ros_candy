@@ -143,15 +143,9 @@ class Machine(object):
 
         values = np.squeeze(values, 1)
         neglogpacs = np.squeeze(neglogpacs, 1)
-        # rewards = np.squeeze(rewards, 1)
-
-        raw_image = np.array([ob[0] for ob in obs])
-        raw_image = np.array([ob[0] for ob in obs])
-        raw_image = np.array([ob[0] for ob in obs])
-        raw_image = np.array([ob[0] for ob in obs])
+        actions = np.squeeze(actions, 1)
 
         speed = np.array([[ob[1]] for ob in obs])
-        actions = np.array([[ob[2]] for ob in obs])
 
         # print(raw_image.shape)
         # print(speed.shape)
@@ -183,6 +177,17 @@ class Machine(object):
 
         td_map[self.speed] = speed
 
+        td_map[self.multimodal_test.camera_left] = np.array([obs[0][0][0]])
+        td_map[self.multimodal_test.camera_right] = np.array([obs[0][0][1]])
+        td_map[self.multimodal_test.eye_left] = np.array([obs[0][0][2]])
+        td_map[self.multimodal_test.eye_right] = np.array([obs[0][0][3]])
+        td_map[self.multimodal_test.actions] = np.array([obs[0][2]])
+        td_map[self.test_speed] = np.array([[obs[0][1]]]) # speed
+
+        # td_map[self.test_raw_image] = np.array([obs[0][1]])
+        # td_map[self.test_raw_image] = np.array([obs[0][2]])
+
+
         summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
         if global_step % 10 == 0:
             self.writer.add_summary(summary, global_step)
@@ -190,6 +195,6 @@ class Machine(object):
 
     def save(self):
         print('Start Saving')
-        for i in self.variable_save_optimize_parts:
-            i.saver.save(self.sess, os.path.join(sys.path[0], 'savenew', str(i._name)), global_step=None, write_meta_graph=False, write_state=False)
+        for part in self.variable_save_optimize_parts:
+            part.save(self.sess)
         print('Saving Done.')

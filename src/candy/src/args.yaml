@@ -58,6 +58,6 @@ decoderac_future:
     weight_decay: 0.001
 
 imitation_coefficient: 0.9
-batch_size: 32
+batch_size: 2
 x_dim: 160
 y_dim: 160

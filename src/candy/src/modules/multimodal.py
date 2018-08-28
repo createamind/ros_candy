@@ -26,7 +26,7 @@ class MultiModal(object):
             self.camera_right_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='camera_right_future')
             self.eye_left_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='eye_left_future')
             self.eye_right_future = tf.placeholder(tf.float32, shape=(batch_size, 160, 160, 8, 3), name='eye_right_future')
-            self.actions_future = tf.reshape(tf.placeholder(tf.float32, shape=(batch_size, 8, 2), name='actions_future'), [batch_size, 16])
+            self.actions_future = tf.placeholder(tf.float32, shape=(batch_size, 8, 2), name='actions_future')
 
         self.parts = []
         #Encoder
@@ -105,3 +105,8 @@ class MultiModal(object):
     def variable_restore(self, sess):
         for part in self.parts:
             part.variable_restore(sess)
+
+    
+    def save(self, sess):
+        for part in self.parts:
+            part.save(sess)
