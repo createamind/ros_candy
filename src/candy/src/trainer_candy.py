@@ -97,6 +97,7 @@ if __name__ == '__main__':
 					param.append(np.array(each.eval(session=machine.sess)))
 				# param = np.array(param)
 				outmsg = msgpack.packb(param, use_bin_type=True)
+				print('Update weights called!')
 				update_weights(outmsg)
 
 			except rospy.ServiceException as e:

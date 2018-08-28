@@ -75,6 +75,7 @@ class Carla_Wrapper(object):
 
 
 	def clear(self):
+		self.state = np.zeros((1, nlstm*2), dtype=np.float32)
 		self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
 		self.last_frame = [[np.zeros([160,160,1,3]) for i in range(7)] for j in range(4)]
 		self.last_control = [[0.0, 0.0] for i in range(7)]
@@ -221,7 +222,9 @@ class Carla_Wrapper(object):
 	# 	return 0 # do nothing
 
 class CarlaGame(object):
-	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, eyeleft_getter, eyeright_getter, eyeback_getter, eyefront_getter, speed_getter, steer_getter, brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher):
+	def __init__(self, carla_wrapper, image_getter, image2_getter, lidar_getter, eyeleft_getter,
+	 eyeright_getter, eyeback_getter, eyefront_getter, speed_getter, steer_getter, 
+	 brake_throttle_getter, is_auto_getter, throttle_publisher, steer_publisher, train=False):
 		self._timer = None
 		self._display = None
 		self.images = None
@@ -230,7 +233,7 @@ class CarlaGame(object):
 		self.manual = True
 		self.cnt = 0
 		self.endnow = False
-		self.canreplay = True
+		self.canreplay = train
 		self.history_manual = False
 		self.history_steer = 0.0
 		pygame.init()
@@ -624,6 +627,10 @@ if __name__ == '__main__':
 		'-l', '--load-rosbag-data',
 		action='store_true',
 		help='load rosbag data')
+	argparser.add_argument(
+		'-t', '--train',
+		action='store_true',
+		help='training')
 	args = argparser.parse_args()
 
 	rospy.init_node('wrapper_candy')
@@ -634,7 +641,7 @@ if __name__ == '__main__':
 	carla_game = CarlaGame(carla_wrapper, wrapper_candy.image_getter(), wrapper_candy.image2_getter(), wrapper_candy.lidar_getter(), 
 	wrapper_candy.eyeleft_getter(), wrapper_candy.eyeright_getter(), wrapper_candy.eyeback_getter(), wrapper_candy.eyefront_getter(), 
 	wrapper_candy.speed_getter(), wrapper_candy.steer_getter(), wrapper_candy.brake_throttle_getter(), wrapper_candy.is_auto_getter(), 
-	wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher)
+	wrapper_candy.throttle_publisher, wrapper_candy.steer_publisher, args.train)
 
 
 	rate = rospy.Rate(10) # 10hz
