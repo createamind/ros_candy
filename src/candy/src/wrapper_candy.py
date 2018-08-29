@@ -56,7 +56,7 @@ except ImportError:
 
 WINDOW_WIDTH = 160
 WINDOW_HEIGHT = 160
-BUFFER_LIMIT = 124
+BUFFER_LIMIT = 100
 
 
 class Carla_Wrapper(object):
