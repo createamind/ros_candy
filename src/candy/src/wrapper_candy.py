@@ -584,7 +584,7 @@ class WrapperCandy():
         self.eyeback = None
         return
 
-     def load_eyefront(self, image_msg):
+    def load_eyefront(self, image_msg):
         # cv_image = self._cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
         # cv_image = cv2.resize(cv_image,(320,320))
         # cv_image = cv2.flip(cv_image, -1)
