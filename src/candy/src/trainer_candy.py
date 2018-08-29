@@ -50,8 +50,8 @@ if __name__ == '__main__':
 
 		global batch
 		global global_step	
-		if len(batch) > 1000:
-			batch = batch[:1000]
+		if len(batch) > 300:
+			batch = batch[:300]
 		if global_step % (TRAIN_EPOCH * 30) == 0:
 			batch = []
 		l = len(obs)
