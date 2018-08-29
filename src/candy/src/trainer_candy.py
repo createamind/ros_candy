@@ -32,7 +32,7 @@ from machine import Machine
 
 
 TRAIN_EPOCH = 30
-BATCH_SIZE = 32
+BATCH_SIZE = 24
 global_step = 0
 batch = []
 
