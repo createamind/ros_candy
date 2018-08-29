@@ -54,12 +54,12 @@ if __name__ == '__main__':
 		if global_step % (TRAIN_EPOCH * 30) == 0:
 			batch = []
 		l = len(obs)
-		for i in range(l - 12):
+		for i in range(12, l - 12):
 			future_obs = obs[i+12]
 			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
-		for i in range(l - 12, l):
-			future_obs = ( [np.zeros([160, 160, 12, 3]) for i in range(4)], 0.0, np.zeros([12, 2]) )
-			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
+		# for i in range(l - 12, l):
+		# 	future_obs = ( [np.zeros([160, 160, 12, 3]) for i in range(4)], 0.0, np.zeros([12, 2]) )
+		# 	batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
 
 		# print(self.rewards)
 		# print(self.values)
