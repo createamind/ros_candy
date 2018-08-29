@@ -593,7 +593,7 @@ class WrapperCandy():
         self.eyefront = None
         return
 
-     def load_lidar(self, ros_cloud):
+    def load_lidar(self, ros_cloud):
         self.lidar = None
         return
         # points_list = []
