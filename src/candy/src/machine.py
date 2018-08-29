@@ -53,7 +53,7 @@ class Machine(object):
         self.variable_restore_parts = [self.multimodal_train, self.multimodal_test, self.ppo]
         self.variable_save_optimize_parts = [self.multimodal_train, self.ppo]
 
-        total_loss = self.multimodal_train.loss + 10 * self.ppo.loss
+        total_loss = self.multimodal_train.loss + 0 * self.ppo.loss
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 

@@ -191,7 +191,7 @@ class PPO(object):
 
     def variable_restore(self, sess):
 
-        model_filename = os.path.join(sys.path[0], "savenew/", self._name)
+        model_filename = os.path.join(sys.path[0], "saveonlyvae/", self._name)
         # if os.path.isfile(model_filename + '.meta'):
         # 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
         # 	self.saver.restore(sess, model_filename)
@@ -203,4 +203,4 @@ class PPO(object):
 
     def save(self, sess):
         if self._saver is not None:
-            self._saver.save(sess, os.path.join(sys.path[0], 'savenew/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)
+            self._saver.save(sess, os.path.join(sys.path[0], 'saveonlyvae/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)

@@ -42,7 +42,8 @@ if __name__ == '__main__':
 	machine = Machine()
 
 	def calculate_difficulty(reward, vaerecon):
-		return vaerecon * vaerecon * abs(reward)
+		# return vaerecon * vaerecon * abs(reward)
+		return vaerecon
 
 	def memory_training(msg):
 		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
