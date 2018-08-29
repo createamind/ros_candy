@@ -69,16 +69,15 @@ class Carla_Wrapper(object):
         self.state = np.zeros((1, nlstm*2), dtype=np.float32)
 
         self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-        self.last_frame = [[np.zeros([160,160,1,3]) for i in range(11)] for j in range(4)]
-        self.last_control = [[0.0, 0.0] for i in range(11)]
+        # self.last_frame = [[np.zeros([160,160,1,3]) for i in range(11)] for j in range(4)]
+        self.last_control = [0.0, 0.0]
         self.publisher = rospy.Publisher('/train_data', String, queue_size=1)
 
 
     def clear(self):
         self.state = np.zeros((1, self.nlstm*2), dtype=np.float32)
         self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
-        self.last_frame = [[np.zeros([160,160,1,3]) for i in range(11)] for j in range(4)]
-        self.last_control = [[0.0, 0.0] for i in range(11)]
+        self.last_control = [0.0, 0.0]
 
     def update_reward(self, cnt, obs, action, reward):
         l = len(self.obs)
@@ -107,16 +106,10 @@ class Carla_Wrapper(object):
     def pre_process(self, inputs, refresh=False):
 
         images, control, reward, std_control, manual, speed = inputs
-        frame = [None] * 4
         images = copy.deepcopy(images)
-        # print(images[0])
         for i, _ in enumerate(images):
             images[i] = images[i].astype(np.float32) / 128 - 1
-            nowframe = np.expand_dims(images[i], 2)
-            frame[i] = np.concatenate(self.last_frame[i] + [nowframe], 2)
-            if refresh == True:
-                self.last_frame[i] = self.last_frame[i][1:] + [nowframe]
-        obs = [copy.deepcopy(frame), copy.deepcopy(speed), np.array(self.last_control + [[0.0,0.0]])]
+        obs = [images, speed, self.last_control]
         return obs, reward, control, std_control, manual
         
 
@@ -187,13 +180,10 @@ class Carla_Wrapper(object):
 
         self.states.append(self.state)
 
-        # Change obs
         if manual:
-            obs[2] = np.array(self.last_control + [std_action])
-            self.last_control = self.last_control[1:] + [std_action]
+            self.last_control = std_action
         else:
-            obs[2] = np.array(self.last_control + [action[0]])
-            self.last_control = self.last_control[1:] + [action[0]]
+            self.last_control = action[0]
 
         self.obs.append(obs)
         self.actions.append(action)

@@ -79,11 +79,11 @@ class Module(object):
 
         """
         if self._saver is not None:
-            model_filename = os.path.join(sys.path[0], "savenew/", self._name)
+            model_filename = os.path.join(sys.path[0], "saveimage/", self._name)
             if os.path.isfile(model_filename + '.data-00000-of-00001'):
                 self._saver.restore(sess, model_filename)
                 return
 
     def save(self, sess):
         if self._saver is not None:
-            self._saver.save(sess, os.path.join(sys.path[0], 'savenew/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)
+            self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)

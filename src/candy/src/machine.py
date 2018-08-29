@@ -170,12 +170,6 @@ class Machine(object):
         td_map[self.multimodal_train.eye_right] = np.array([ob[0][3] for ob in obs])
         td_map[self.multimodal_train.actions] = np.array([ob[2] for ob in obs])
 
-        td_map[self.multimodal_train.camera_left_future] = np.array([ob[0][0] for ob in future_obs])
-        td_map[self.multimodal_train.camera_right_future] = np.array([ob[0][1] for ob in future_obs])
-        td_map[self.multimodal_train.eye_left_future] = np.array([ob[0][2] for ob in future_obs])
-        td_map[self.multimodal_train.eye_right_future] = np.array([ob[0][3] for ob in future_obs])
-        td_map[self.multimodal_train.actions_future] = np.array([ob[2] for ob in future_obs])
-
         td_map[self.speed] = np.array([[ob[1]] for ob in obs])
 
         td_map[self.multimodal_test.camera_left] = np.array([obs[0][0][0]])

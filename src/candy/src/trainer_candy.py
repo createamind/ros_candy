@@ -55,9 +55,8 @@ if __name__ == '__main__':
 		if global_step % (TRAIN_EPOCH * 10) == 0:
 			batch = []
 		l = len(obs)
-		for i in range(12, l - 12):
-			future_obs = obs[i+12]
-			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
+		for i in range(l):
+			batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i]]) )
 		# for i in range(l - 12, l):
 		# 	future_obs = ( [np.zeros([160, 160, 12, 3]) for i in range(4)], 0.0, np.zeros([12, 2]) )
 		# 	batch.append( (calculate_difficulty(rewards[i], vaerecons[i]), [obs[i], actions[i], values[i], neglogpacs[i], rewards[i], vaerecons[i], states[i], std_actions[i], manual[i], copy.deepcopy(future_obs)]) )
@@ -82,7 +81,7 @@ if __name__ == '__main__':
 			tbatch = []
 			for i in roll:
 				tbatch.append(batch[i])
-			tra_batch = [np.array([t[1][i] for t in tbatch]) for i in range(10)]
+			tra_batch = [np.array([t[1][i] for t in tbatch]) for i in range(9)]
 			# tra_batch = [np.array([t[i] for t in tbatch]) for i in range(7)]
 			machine.train(tra_batch, global_step)
 			global_step += 1
