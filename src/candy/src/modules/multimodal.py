@@ -34,10 +34,10 @@ class MultiModal(Module):
         # self.parts += [self.encoder_cl, self.encoder_cr, self.encoder_el, self.encoder_er, self.encoder_ac]
 
         # self.agg = tf.concat([self.encoder_cl.outputs, self.encoder_cr.outputs, self.encoder_el.outputs, self.encoder_er.outputs, self.encoder_ac.outputs], 1)
-        self.e1 = tf.layers.dropout(self.encoder_cl.outputs, rate=0.25, training=is_training)
-        self.e2 = tf.layers.dropout(self.encoder_cr.outputs, rate=0.25, training=is_training)
-        self.e3 = tf.layers.dropout(self.encoder_el.outputs, rate=0.25, training=is_training)
-        self.e4 = tf.layers.dropout(self.encoder_er.outputs, rate=0.25, training=is_training)
+        self.e1 = tf.layers.dropout(self.encoder_cl.outputs, rate=0.0001, training=is_training)
+        self.e2 = tf.layers.dropout(self.encoder_cr.outputs, rate=0.0001, training=is_training)
+        self.e3 = tf.layers.dropout(self.encoder_el.outputs, rate=0.0001, training=is_training)
+        self.e4 = tf.layers.dropout(self.encoder_er.outputs, rate=0.0001, training=is_training)
         
         self.mean1, self.logsigma1 = tf.split(self.e1, 2, 1)
         self.mean2, self.logsigma2 = tf.split(self.e2, 2, 1)
@@ -52,8 +52,8 @@ class MultiModal(Module):
         # z = self.agg.outputs
 
 
-        self.mean = tf.concat([self.mean1.outputs, self.mean2.outputs, self.mean3.outputs, self.mean4.outputs], 1)
-        self.logsigma = tf.concat([self.logsigma1.outputs, self.logsigma2.outputs, self.logsigma3.outputs, self.logsigma4.outputs], 1)
+        self.mean = tf.concat([self.mean1, self.mean2, self.mean3, self.mean4], 1)
+        self.logsigma = tf.concat([self.logsigma1, self.logsigma2, self.logsigma3, self.logsigma4], 1)
 
         # self.mean, self.logsigma = tf.split(z, 2, 1)
         sigma = tf.exp(self.logsigma)
@@ -87,7 +87,7 @@ class MultiModal(Module):
         self.er_recons = MSELoss(self.decoder_er.outputs, self.eye_right, self._args, 'er_recons_loss', is_training=is_training, reuse=reuse)
         # self.ac_recons = MSELoss(self.decoder_ac.outputs, self.actions, self._args, 'ac_recons_loss', is_training=is_training, reuse=reuse)
 
-        self.loss = 250 * self.vae_loss.outputs + self.cl_recons.outputs + self.cr_recons.outputs + self.el_recons.outputs + self.er_recons.outputs + self.ac_recons.outputs
+        self.loss = 250 * self.vae_loss.outputs + self.cl_recons.outputs + self.cr_recons.outputs + self.el_recons.outputs + self.er_recons.outputs
         
         return self.loss
     #     #Variable saver

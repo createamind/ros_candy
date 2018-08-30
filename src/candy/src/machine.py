@@ -54,11 +54,11 @@ class Machine(object):
         self.variable_restore_parts = [self.multimodal_train, self.multimodal_test, self.ppo]
         self.variable_save_optimize_parts = [self.multimodal_train, self.ppo]
 
-        total_loss = self.multimodal_train.loss + 10 * self.ppo.loss
+        total_loss = self.multimodal_train.loss + 0 * self.ppo.loss
 
         #Not Turn Quickly Loss:
         self.smooth_loss = MSELoss(self.ppo.train_model.a0[:,1], self.multimodal_train.actions[:,1], args, 'smooth_loss', is_training=self.is_training, reuse=False)
-        total_loss += self.smooth_loss.outputs
+        total_loss += 0 * self.smooth_loss.outputs
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
