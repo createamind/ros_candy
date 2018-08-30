@@ -40,8 +40,8 @@ class Machine(object):
         z = self.multimodal_train.mean
         test_z = self.multimodal_test.mean
 
-        z = tf.concat([z[:,:15], self.speed], 1)
-        test_z = tf.concat([test_z[:,:15], self.test_speed], 1)
+        # z = tf.concat([z[:,:15], self.speed], 1)
+        # test_z = tf.concat([test_z[:,:15], self.test_speed], 1)
 
         z = tf.clip_by_value(z, -5, 5)
         test_z = tf.clip_by_value(test_z, -5, 5)
@@ -58,7 +58,7 @@ class Machine(object):
 
         #Not Turn Quickly Loss:
         self.smooth_loss = MSELoss(self.ppo.train_model.a0[:,1], self.multimodal_train.actions[:,1], args, 'smooth_loss', is_training=self.is_training, reuse=False)
-        total_loss += 5 * self.smooth_loss.outputs
+        total_loss += self.smooth_loss.outputs
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
