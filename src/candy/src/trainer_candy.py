@@ -32,7 +32,7 @@ from machine import Machine
 
 
 TRAIN_EPOCH = 30
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 global_step = 0
 batch = []
 
@@ -50,9 +50,9 @@ if __name__ == '__main__':
 
 		global batch
 		global global_step	
-		if len(batch) > 300:
-			batch = batch[:300]
-		if global_step % (TRAIN_EPOCH * 10) == 0:
+		if len(batch) > 1000:
+			batch = batch[:1000]
+		if global_step % (TRAIN_EPOCH * 30) == 0:
 			batch = []
 		l = len(obs)
 		for i in range(l):

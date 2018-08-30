@@ -17,6 +17,7 @@ from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
 from tqdm import tqdm
 import rospy
+from modules.losses import MSELoss
 
 import sys
 if not (sys.version_info[0] < 3):
@@ -55,6 +56,10 @@ class Machine(object):
 
         total_loss = self.multimodal_train.loss + 10 * self.ppo.loss
 
+        #Not Turn Quickly Loss:
+        self.smooth_loss = MSELoss(self.ppo.train_model.a0[:,1], self.multimodal_train.actions[:,1], args, 'smooth_loss', is_training=self.is_training, reuse=False)
+        total_loss += 5 * self.smooth_loss.outputs
+
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
         # for var in tf.trainable_variables():
@@ -71,7 +76,7 @@ class Machine(object):
 
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        self.writer = tf.summary.FileWriter('/tmp/logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), self.sess.graph)
+        self.writer = tf.summary.FileWriter('/tmp/logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
 
         with tf.Graph().as_default() as g:
             tf.Graph.finalize(g)
@@ -142,7 +147,7 @@ class Machine(object):
 
 
     def train(self, inputs, global_step):
-        obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual, future_obs = inputs
+        obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = inputs
 
         values = np.squeeze(values, 1)
         neglogpacs = np.squeeze(neglogpacs, 1)
