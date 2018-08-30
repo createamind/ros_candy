@@ -17,9 +17,9 @@ class ImageDecoder(Module):
         x = self._inputs
         with tf.variable_scope('decoder', reuse=reuse) as _:
             # x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])))
-            x = tf.nn.relu(tf.layers.dense(x, 12800, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])))
+            x = tf.nn.relu(tf.layers.dense(x, 25600, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])))
 
-            x = tf.reshape(x, [-1, 10, 10, 128])
+            x = tf.reshape(x, [-1, 10, 10, 256])
 
             x = tf.nn.relu(tf.layers.conv2d_transpose(x, 128, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),

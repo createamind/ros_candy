@@ -36,12 +36,12 @@ class ImageEncoder(Module):
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
 
             # x = B * 20 * 20 * 4 * 128
-            x = tf.nn.relu(tf.layers.conv2d(x, 128, [4, 4], strides=(2, 2), padding='SAME', 
+            x = tf.nn.relu(tf.layers.conv2d(x, 256, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
 
             # x = B * 10 * 10 * 2 * 32
-            x = tf.reshape(x, [-1, 12800])
+            x = tf.reshape(x, [-1, 25600])
             # x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])))
             x = tf.layers.dense(x, 128, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']))
             
