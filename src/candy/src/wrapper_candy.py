@@ -54,8 +54,8 @@ try:
 except ImportError:
     raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
-WINDOW_WIDTH = 160
-WINDOW_HEIGHT = 160
+WINDOW_WIDTH = 320
+WINDOW_HEIGHT = 320
 BUFFER_LIMIT = 100
 
 
@@ -459,15 +459,15 @@ class WrapperCandy():
             if self.image is None:
                 return None
             image = self.image[130:, :]
-            image = cv2.resize(image, (160,160))
-            return image		
+            image = cv2.resize(image, (320,320))
+            return image	
         return func
     def image2_getter(self):
         def func():
             if self.image2 is None:
                 return None
             image = self.image2[130:, :]
-            image = cv2.resize(image, (160,160))
+            image = cv2.resize(image, (320,320))
             return image
         return func
     def lidar_getter(self):
@@ -479,7 +479,7 @@ class WrapperCandy():
             if self.eyeleft is None:
                 return None
             image = self.eyeleft[130:, :]
-            image = cv2.resize(image, (160,160))
+            image = cv2.resize(image, (320,320))
             return image
         return func
     def eyeright_getter(self):
@@ -487,7 +487,7 @@ class WrapperCandy():
             if self.eyeright is None:
                 return None
             image = self.eyeright[130:, :]
-            image = cv2.resize(image, (160,160))
+            image = cv2.resize(image, (320,320))
             return image
         return func
 
