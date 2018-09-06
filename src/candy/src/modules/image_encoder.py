@@ -25,23 +25,28 @@ class ImageEncoder(Module):
 
         with tf.variable_scope('encoder', reuse=reuse) as _:
             # x = 320, 320, 3
-            x = tf.layers.conv2d(x, 32, (7, 7), strides=(4, 4), padding='same', 
+            x = tf.layers.conv2d(x, 32, (7, 7), padding='same', 
                                  kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
             x = bn_relu(x, is_training)
+            x = tf.layers.max_pooling2d(x, 4, 4)
+
             # x = 80, 80, 32
-            x = tf.layers.conv2d(x, 64, (5, 5), strides=(4, 4), padding='same', 
+            x = tf.layers.conv2d(x, 64, (5, 5), padding='same', 
                                  kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer,)
             x = bn_relu(x, is_training)
+            x = tf.layers.max_pooling2d(x, 4, 4)
 
             # x = 20, 20, 64
-            x = tf.layers.conv2d(x, 128, (5, 5), strides=(2, 2), padding='same', 
+            x = tf.layers.conv2d(x, 128, (5, 5), padding='same', 
                                  kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
             x = bn_relu(x, is_training)
+            x = tf.layers.max_pooling2d(x, 2, 2)
 
             # x = 10, 10, 128
-            x = tf.layers.conv2d(x, 256, (3, 3), strides=(2, 2), padding='same', 
+            x = tf.layers.conv2d(x, 256, (3, 3), padding='same', 
                              kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
             x = bn_relu(x, is_training)
+            x = tf.layers.max_pooling2d(x, 2, 2)
 
             # x = 5, 5, 256
             x = tf.reshape(x, [-1, 6400])
