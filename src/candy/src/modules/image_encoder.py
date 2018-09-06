@@ -16,36 +16,34 @@ class ImageEncoder(Module):
 
     def _build_net(self, is_training, reuse):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
+        
+        def conv_bn_relu(x, filters, filter_size):
+            x = tf.layers.conv2d(x, filters, filter_size, padding='same', 
+                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+            x = bn_relu(x, is_training)
+            return x
 
         x = self._inputs
-
+        
         if not reuse:
             timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
             tf.summary.image(self._name, timage[:1])
 
         with tf.variable_scope('encoder', reuse=reuse) as _:
             # x = 320, 320, 3
-            x = tf.layers.conv2d(x, 32, (7, 7), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)
+            x = conv_bn_relu(x, 32, 7)
             x = tf.layers.max_pooling2d(x, 4, 4)
 
             # x = 80, 80, 32
-            x = tf.layers.conv2d(x, 64, (5, 5), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer,)
-            x = bn_relu(x, is_training)
+            x = conv_bn_relu(x, 64, 5)
             x = tf.layers.max_pooling2d(x, 4, 4)
 
             # x = 20, 20, 64
-            x = tf.layers.conv2d(x, 128, (5, 5), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)
+            x = conv_bn_relu(x, 128, 5)
             x = tf.layers.max_pooling2d(x, 2, 2)
 
             # x = 10, 10, 128
-            x = tf.layers.conv2d(x, 256, (3, 3), padding='same', 
-                             kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)
+            x = conv_bn_relu(x, 256, 3)
             x = tf.layers.max_pooling2d(x, 2, 2)
 
             # x = 5, 5, 256

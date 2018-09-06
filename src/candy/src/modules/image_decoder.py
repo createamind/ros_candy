@@ -16,6 +16,13 @@ class ImageDecoder(Module):
 
     def _build_net(self, is_training, reuse):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
+        
+        convtrans = lambda x, filters, filter_size, strides: tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding='same', 
+                                                               kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+        def convtrans_bn_relu(x, filters, filter_size, strides):
+            x = convtrans(x, filters, filter_size, strides)
+            x = bn_relu(x, is_training)
+            return x
 
         x = self._inputs
         with tf.variable_scope('decoder', reuse=reuse) as _:
@@ -27,27 +34,14 @@ class ImageDecoder(Module):
             
             x = tf.reshape(x, [-1, 5, 5, 256])
             # x = 5, 5, 256
-            x = tf.layers.conv2d(x, 128, (3, 3), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)
-            x = tf.image.resize_nearest_neighbor(x, (10, 10))
-
+            x = convtrans_bn_relu(x, 128, 3, 2)
             # x = 10, 10, 128
-            x = tf.layers.conv2d(x, 64, (5, 5), strides=(2, 2), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)
-            x = tf.image.resize_nearest_neighbor(x, (20, 20))
-
+            x = convtrans_bn_relu(x, 64, 5, 2)
             # x = 20, 20, 64
-            x = tf.layers.conv2d(x, 32, (5, 5), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)
-            x = tf.image.resize_nearest_neighbor(x, (80, 80))
+            x = convtrans_bn_relu(x, 32, 5, 4)
 
             # x = 80, 80, 32
-            x = tf.layers.conv2d(x, 3, (7, 7), padding='same', 
-                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = tf.image.resize_nearest_neighbor(x, (320, 320))
+            x = convtrans(x, 3, 7, 4)
             x = tf.nn.tanh(x)
             # x = 320, 320, 8, 3
         if not reuse:
