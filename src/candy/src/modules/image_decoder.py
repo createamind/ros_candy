@@ -23,7 +23,7 @@ class ImageDecoder(Module):
                                 kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
             x = tf.layers.dense(x, 6400, 
                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = bn_relu(x, is_training)\
+            x = bn_relu(x, is_training)
             
             x = tf.reshape(x, [-1, 5, 5, 256])
             # x = 5, 5, 256
