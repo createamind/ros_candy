@@ -7,7 +7,7 @@ import numpy as np
 import math
 import os
 from modules.module import Module
-from modules.utils.utils import kaiming_initializer, xavier_initializer, relu_bn
+from modules.utils.utils import kaiming_initializer, xavier_initializer, bn_relu
 
 class ImageDecoder(Module):
     def __init__(self, inputs, *args, **kwargs):
@@ -23,23 +23,23 @@ class ImageDecoder(Module):
                                 kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
             x = tf.layers.dense(x, 6400, 
                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = relu_bn(x, is_training)\
+            x = bn_relu(x, is_training)\
             
             x = tf.reshape(x, [-1, 5, 5, 256])
             # x = 5, 5, 256
-            x = tf.layers.conv2d_transpose(x, 128, (5, 5), strides=(2, 2), padding='same', 
+            x = tf.layers.conv2d_transpose(x, 128, (3, 3), strides=(2, 2), padding='same', 
                                            kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = relu_bn(x, is_training)
+            x = bn_relu(x, is_training)
 
             # x = 10, 10, 128
             x = tf.layers.conv2d_transpose(x, 64, (5, 5), strides=(2, 2), padding='same', 
                                            kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = relu_bn(x, is_training)
+            x = bn_relu(x, is_training)
 
             # x = 20, 20, 64
             x = tf.layers.conv2d_transpose(x, 32, (5, 5), strides=(4, 4), padding='same', 
                                            kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = relu_bn(x, is_training)
+            x = bn_relu(x, is_training)
 
             # x = 80, 80, 32
             x = tf.nn.tanh(tf.layers.conv2d_transpose(x, 3, (7, 7), strides=(4, 4), padding='same', 

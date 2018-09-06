@@ -299,6 +299,6 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
     return tf.contrib.layers.variance_scaling_initializer(factor=1, uniform=uniform, seed=seed, dtype=dtype)
 
 # relu and batch normalization
-def relu_bn(layer, training): 
+def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
