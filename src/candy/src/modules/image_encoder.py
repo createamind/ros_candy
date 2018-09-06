@@ -7,6 +7,7 @@ import numpy as np
 import math
 import os
 from modules.module import Module
+from modules.utils.utils import kaiming_initializer, xavier_initializer, relu_bn
 
 class ImageEncoder(Module):
     def __init__(self, inputs, *args, **kwargs):
@@ -14,6 +15,8 @@ class ImageEncoder(Module):
         super(ImageEncoder, self).__init__(*args, **kwargs)
 
     def _build_net(self, is_training, reuse):
+        l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
+
         x = self._inputs
 
         if not reuse:
@@ -21,31 +24,30 @@ class ImageEncoder(Module):
             tf.summary.image(self._name, timage[:1])
 
         with tf.variable_scope('encoder', reuse=reuse) as _:
-            # x = B * 320 * 320 * 8 * 3
-            x = tf.nn.relu(tf.layers.conv2d(x, 16, [4, 4], strides=(2, 2), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()))
-            # x = B * 160 * 160 * 8 * 32
-            x = tf.nn.relu(tf.layers.conv2d(x, 64, [4, 4], strides=(2, 2), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()))
-                
-            # x = B * 40 * 40 * 4 * 64
-            x = tf.nn.relu(tf.layers.conv2d(x, 128, [4, 4], strides=(2, 2), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()))
+            # x = 320, 320, 3
+            x = tf.layers.conv2d(x, 32, (7, 7), strides=(4, 4), padding='same', 
+                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+            x = relu_bn(x, is_training)
+            # x = 80, 80, 32
+            x = tf.layers.conv2d(x, 64, (5, 5), strides=(4, 4), padding='same', 
+                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer,)
+            x = relu_bn(x, is_training)
 
-            # x = B * 20 * 20 * 4 * 128
-            x = tf.nn.relu(tf.layers.conv2d(x, 256, [4, 4], strides=(2, 2), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()))
+            # x = 20, 20, 64
+            x = tf.layers.conv2d(x, 128, (5, 5), strides=(2, 2), padding='same', 
+                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+            x = relu_bn(x, is_training)
 
-            x = tf.nn.relu(tf.layers.conv2d(x, 512, [4, 4], strides=(2, 2), padding='SAME', 
-                kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
-                kernel_initializer=tf.contrib.layers.xavier_initializer()))
-            # x = B * 10 * 10 * 2 * 32
-            x = tf.reshape(x, [-1, 51200])
-            # x = tf.nn.relu(tf.layers.dense(x, 512, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])))
-            x = tf.layers.dense(x, 30, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']))
-            
+            # x = 10, 10, 128
+            x = tf.layers.conv2d(x, 256, (5, 5), strides=(2, 2), padding='same', 
+                             kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+            x = relu_bn(x, is_training)
+
+            # x = 5, 5, 256
+            x = tf.reshape(x, [-1, 6400])
+
+            x = tf.layers.dense(x, 512, 
+                                kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+            x = relu_bn(x, is_training)
+            x = tf.layers.dense(x, 128, kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
         return x
