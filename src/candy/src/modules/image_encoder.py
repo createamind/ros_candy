@@ -17,9 +17,10 @@ class ImageEncoder(Module):
     def _build_net(self, is_training, reuse):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
         
-        def conv_bn_relu(x, filters, filter_size):
-            x = tf.layers.conv2d(x, filters, filter_size, padding='same', 
+        conv = lambda x, filters, filter_size: tf.layers.conv2d(x, filters, filter_size, padding='same', 
                                  kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+        def conv_bn_relu(x, filters, filter_size):
+            x = conv(x, filters, filter_size)
             x = bn_relu(x, is_training)
             return x
 
@@ -31,23 +32,23 @@ class ImageEncoder(Module):
 
         with tf.variable_scope('encoder', reuse=reuse) as _:
             # x = 320, 320, 3
-            x = conv_bn_relu(x, 32, 7)
+            x = conv_bn_relu(x, 64, 7)
             x = tf.layers.max_pooling2d(x, 4, 4)
 
-            # x = 80, 80, 32
-            x = conv_bn_relu(x, 64, 5)
-            x = tf.layers.max_pooling2d(x, 4, 4)
-
-            # x = 20, 20, 64
+            # x = 80, 80, 64
             x = conv_bn_relu(x, 128, 5)
-            x = tf.layers.max_pooling2d(x, 2, 2)
+            x = tf.layers.max_pooling2d(x, 4, 4)
 
-            # x = 10, 10, 128
+            # x = 20, 20, 128
             x = conv_bn_relu(x, 256, 3)
             x = tf.layers.max_pooling2d(x, 2, 2)
 
+            # x = 10, 10, 256
+            x = conv_bn_relu(x, 512, 3)
+            x = tf.layers.max_pooling2d(x, 2, 2)
+            # x = conv_vn_relu(x, 256, 1)
             # x = 5, 5, 256
-            x = tf.reshape(x, [-1, 6400])
+            x = tf.reshape(x, [-1, 12800])
 
             x = tf.layers.dense(x, 512, 
                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)

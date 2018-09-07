@@ -219,7 +219,7 @@ class CarlaGame(object):
         self._timer = None
         self._display = None
         self.images = None
-        self.should_display = True
+        self.should_display = False
         random.seed(datetime.datetime.now())
         self.manual = True
         self.cnt = 0
