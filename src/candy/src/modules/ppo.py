@@ -148,9 +148,9 @@ class PPO(object):
         imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
         loss = 0 * loss + self.args['imitation_coefficient'] * imitation_loss
    
-        tf.summary.scalar('actionloss', action_loss)
-        tf.summary.scalar('valueloss', value_loss)
-        tf.summary.scalar('entropyloss', dist_entropy)
+        # tf.summary.scalar('actionloss', action_loss)
+        # tf.summary.scalar('valueloss', value_loss)
+        # tf.summary.scalar('entropyloss', dist_entropy)
         tf.summary.scalar('imitation_loss', imitation_loss)
         # with tf.variable_scope('model'):
         #     params = tf.trainable_variables()
@@ -189,9 +189,9 @@ class PPO(object):
         opt_op = self.opt.apply_gradients(gvs)
         return opt_op
 
-    def variable_restore(self, sess):
+    def variable_restore(self, sess, name):
 
-        model_filename = os.path.join(sys.path[0], "saveimage/", self._name)
+        model_filename = os.path.join(sys.path[0], "save" + name, self._name)
         # if os.path.isfile(model_filename + '.meta'):
         # 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
         # 	self.saver.restore(sess, model_filename)
@@ -201,6 +201,6 @@ class PPO(object):
             self._saver.restore(sess, model_filename)
             return
 
-    def save(self, sess):
+    def save(self, sess, name):
         if self._saver is not None:
-            self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)
+            self._saver.save(sess, os.path.join(sys.path[0], 'save' + name, str(self._name)), global_step=None, write_meta_graph=False, write_state=False)

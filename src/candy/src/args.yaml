@@ -1,24 +1,24 @@
 ---
 multimodal:
-    learning_rate: 0.0005
-    weight_decay: 0.001
+    learning_rate: 0.001
+    weight_decay: 0.0005
 ppo:
-    learning_rate: 0.0005
+    learning_rate: 0.001
     weight_decay: 0.001
 encodercl:
-    learning_rate: 0.0005
+    learning_rate: 0.001
     weight_decay: 0.001
 encodercr:
-    learning_rate: 0.0005
+    learning_rate: 0.001
     weight_decay: 0.001
 encoderel:
-    learning_rate: 0.0005
+    learning_rate: 0.001
     weight_decay: 0.001
 encoderer:
-    learning_rate: 0.0005
+    learning_rate: 0.001
     weight_decay: 0.001
 encoderac:
-    learning_rate: 0.0005
+    learning_rate: 0.001
     weight_decay: 0.001
 aggregation:
     learning_rate: 0.0005
@@ -58,6 +58,6 @@ decoderac_future:
     weight_decay: 0.001
 
 imitation_coefficient: 0.9
-batch_size: 64
+batch_size: 32
 x_dim: 160
 y_dim: 160

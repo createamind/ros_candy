@@ -24,8 +24,8 @@ if not (sys.version_info[0] < 3):
     print = functools.partial(print, flush=True)
 
 class Machine(object):
-    def __init__(self):
-
+    def __init__(self, name, summary=True):
+        self.allname = name
         args = self.get_args()
         self.args = args
 
@@ -76,7 +76,8 @@ class Machine(object):
 
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        self.writer = tf.summary.FileWriter('/tmp/logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
+        if summary:
+            self.writer = tf.summary.FileWriter('/tmp/logs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + self.allname, self.sess.graph)
 
         with tf.Graph().as_default() as g:
             tf.Graph.finalize(g)
@@ -85,7 +86,7 @@ class Machine(object):
         print('Restoring!')
 
         for part in self.variable_restore_parts:
-            part.variable_restore(self.sess)
+            part.variable_restore(self.sess, self.allname)
 
         print('Get_Params!')
         self.params = []
@@ -141,7 +142,7 @@ class Machine(object):
         # for ind, _ in tqdm(enumerate(self.params)):
         #     self.params[ind].load(mat[ind], self.sess)
         for part in self.variable_restore_parts:
-            part.variable_restore(self.sess)
+            part.variable_restore(self.sess, self.allname)
 
         print('Weights Updated!')
 
@@ -196,5 +197,5 @@ class Machine(object):
     def save(self):
         print('Start Saving')
         for part in self.variable_save_optimize_parts:
-            part.save(self.sess)
+            part.save(self.sess, self.allname)
         print('Saving Done.')

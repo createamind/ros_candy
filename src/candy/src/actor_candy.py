@@ -5,6 +5,7 @@ import numpy as np
 import yaml
 import os
 import datetime
+import argparse
 import functools
 import msgpack
 import msgpack_numpy as m
@@ -25,8 +26,15 @@ from machine import Machine
 
 if __name__ == '__main__':
     rospy.init_node('actor_candy')
-    machine = Machine()
+    argparser = argparse.ArgumentParser('Wrapper')
+    argparser.add_argument(
+        '-n', '--name',
+        help='name')
+    args = argparser.parse_args()
+    rospy.init_node('trainer_candy')
+    machine = Machine(args.name, summary=False)
 
+    
     def step(data):
         obs, state = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
         # print(np.array(obs).shape)

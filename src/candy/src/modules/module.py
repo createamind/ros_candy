@@ -71,7 +71,7 @@ class Module(object):
         return opt_op
 
 
-    def variable_restore(self, sess):
+    def variable_restore(self, sess, name):
         r"""restore variables from `./save` directory, using self._saver. It is called with a tensorflow session.
 
         Args:
@@ -79,11 +79,11 @@ class Module(object):
 
         """
         if self._saver is not None:
-            model_filename = os.path.join(sys.path[0], "saveimage/", self._name)
+            model_filename = os.path.join(sys.path[0], "save" + name, self._name)
             if os.path.isfile(model_filename + '.data-00000-of-00001'):
                 self._saver.restore(sess, model_filename)
                 return
 
-    def save(self, sess):
+    def save(self, sess, name):
         if self._saver is not None:
-            self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)
+            self._saver.save(sess, os.path.join(sys.path[0], 'save' + name, str(self._name)), global_step=None, write_meta_graph=False, write_state=False)

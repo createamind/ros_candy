@@ -163,20 +163,29 @@ class Carla_Wrapper(object):
         self.publisher.publish(msg_str)
         self.obs, self.actions, self.values, self.neglogpacs, self.rewards, self.vaerecons, self.states, self.std_actions, self.manual = [],[],[],[],[],[],[],[],[]
 
-    def get_control_and_update(self, inputs):
+    def get_control_and_update(self, inputs, no_actor):
 
         obs, reward, _, std_action, manual = self.pre_process(inputs, refresh=True)
 
-        rospy.wait_for_service('model_step')
-        try:
-            model_step = rospy.ServiceProxy('model_step', Step)
-            msg_input = msgpack.packb([obs, self.state], use_bin_type=True)
-            msg_output = model_step(msg_input)
-            action, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
-            # print(action)
-        except rospy.ServiceException as e:
-            print("Service call failed: %s" % e)
-            return [0,0]
+        if not no_actor:
+            rospy.wait_for_service('model_step')
+            try:
+                model_step = rospy.ServiceProxy('model_step', Step)
+                msg_input = msgpack.packb([obs, self.state], use_bin_type=True)
+                msg_output = model_step(msg_input)
+                action, value, self.state, neglogpacs, vaerecon = msgpack.unpackb(msg_output.b, raw=False, encoding='utf-8')
+                # print(action)
+            except rospy.ServiceException as e:
+                print("Service call failed: %s" % e)
+                action = [[0.0, 0.0]]
+                value = [0.0]
+                neglogpacs = [0.0]
+                vaerecon = [0.0]
+        else:
+            action = [[0.0, 0.0]]
+            value = [0.0]
+            neglogpacs = [0.0]
+            vaerecon = [0.0]   
 
         self.states.append(self.state)
 
@@ -251,9 +260,10 @@ class CarlaGame(object):
             (WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
-    def execute(self):
-        self._on_loop()
-        self._on_render()
+    def execute(self, no_actor, no_display):
+        self._on_loop(no_actor)
+        if not no_display:
+            self._on_render()
         pygame.event.pump() # process event queue
 
 
@@ -264,7 +274,7 @@ class CarlaGame(object):
         reward = 0.1 - 20 * abs(history_steer - steer)
         return reward
 
-    def _on_loop(self):
+    def _on_loop(self, no_actor):
         left_image = self.image_getter()
         right_image = self.image2_getter()
         eyeleft = self.eyeleft_getter()
@@ -294,15 +304,15 @@ class CarlaGame(object):
         self.images = [left_image, right_image, eyeleft, eyeright]
 
         self.cnt += 1
-        model_control = self.carla_wrapper.get_control_and_update([self.images, control, reward, control, manual, speed])
+        model_control = self.carla_wrapper.get_control_and_update([self.images, control, reward, control, manual, speed], no_actor)
 
         if len(np.array(model_control).shape) != 1:
             model_control = model_control[0]
-        print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" % (control[0], model_control[0], control[1], model_control[1]))
-        if manual:
-            print("Human!")
-        else:
-            print("Model!")
+        # print("throttle=%.2f, %.2f ---- steer=%.2f, %.2f" % (control[0], model_control[0], control[1], model_control[1]))
+        # if manual:
+        #     print("Human!")
+        # else:
+        #     print("Model!")
 
         # if self.manual_control:
         # 	self.throttle_publisher.publish(max(-1.0, min(1.0, control[0])))
@@ -596,7 +606,7 @@ class WrapperCandy():
         import os
         from glob import glob
         result = sorted([y for x in os.walk(PATH) for y in glob(os.path.join(x[0], '*.jpg'))])
-        print(len(result))
+        # print(len(result))
         for _ in range(1000000):
             for v in result:
                 image = cv2.imread(v)
@@ -627,6 +637,10 @@ if __name__ == '__main__':
         '-n', '--no-actor',
         action='store_true',
         help='no actor')
+    argparser.add_argument(
+        '-d', '--no-display',
+        action='store_true',
+        help='no display')
     args = argparser.parse_args()
 
     rospy.init_node('wrapper_candy')
@@ -648,6 +662,5 @@ if __name__ == '__main__':
         # print('speed', wrapper_candy.speed, 'steer', wrapper_candy.steer, 'is_auto', wrapper_candy.is_auto, 'brake_th', wrapper_candy.brake_throttle)
         if not args.load_rosbag_data:
             wrapper_candy.all_publisher()
-        if not args.no_actor:
-            carla_game.execute()
+        carla_game.execute(args.no_actor, args.no_display)
         rate.sleep()
