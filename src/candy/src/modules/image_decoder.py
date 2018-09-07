@@ -28,13 +28,14 @@ class ImageDecoder(Module):
         with tf.variable_scope('decoder', reuse=reuse) as _:
             x = tf.layers.dense(x, 512, 
                                 kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
-            x = tf.layers.dense(x, 12800, 
+            x = tf.layers.dense(x, 6400, 
                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
             x = bn_relu(x, is_training)
             
-            x = tf.reshape(x, [-1, 5, 5, 512])
+            x = tf.reshape(x, [-1, 5, 5, 256])
+            # x = 5, 5, 256
+            x = conv_bn_relu(x, 512, 1)
             # x = 5, 5, 512
-            # x = conv_bn_relu(x, 512, 1)
             x = conv_bn_relu(x, 256, 3)
             x = tf.image.resize_nearest_neighbor(x, (10, 10))
             # x = 10, 10, 256
