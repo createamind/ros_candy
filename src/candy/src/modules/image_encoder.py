@@ -44,10 +44,8 @@ class ImageEncoder(Module):
             # x = 10, 10, 256
             x = conv_bn_relu(x, 512, 3, 2)
             
-            # x = 5, 5, 512
-            x = conv(x, 256, 1)
             # x = 5, 5, 256
-            x = tf.reshape(x, [-1, 6400])
+            x = tf.reshape(x, [-1, 12800])
 
             x = tf.layers.dense(x, 512, 
                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
