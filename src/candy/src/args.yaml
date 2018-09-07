@@ -6,7 +6,7 @@ ppo:
     learning_rate: 0.0005
     weight_decay: 0.001
 encodercl:
-    learning_rate: 1e-4
+    learning_rate: 1e-5
     weight_decay: 0.001
 encodercr:
     learning_rate: 0.0005
@@ -27,7 +27,7 @@ de_aggregation:
     learning_rate: 0.0005
     weight_decay: 0.001
 decodercl:
-    learning_rate: 1e-4
+    learning_rate: 1e-5
     weight_decay: 0.001
 decodercr:
     learning_rate: 0.0005
@@ -58,6 +58,6 @@ decoderac_future:
     weight_decay: 0.001
 
 imitation_coefficient: 0.9
-batch_size: 16
+batch_size: 32
 x_dim: 160
 y_dim: 160
