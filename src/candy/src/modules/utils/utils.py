@@ -290,3 +290,14 @@ def q_explained_variance(qpred, q):
     _, varpred = tf.nn.moments(q - qpred, axes=[0, 1])
     check_shape([vary, varpred], [[]] * 2)
     return 1.0 - (varpred / vary)
+
+# kaiming initializer
+def kaiming_initializer(uniform=False, seed=None, dtype=tf.float32):
+    return tf.contrib.layers.variance_scaling_initializer(factor=2, uniform=uniform, seed=seed, dtype=dtype)
+# xavier initializer
+def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
+    return tf.contrib.layers.variance_scaling_initializer(factor=1, uniform=uniform, seed=seed, dtype=dtype)
+
+# relu and batch normalization
+def bn_relu(layer, training):
+    return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
