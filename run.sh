@@ -1,7 +1,7 @@
-export NAME=nobeta
-export PORT=10001
+export NAME=weirdbetasmalllr
+export PORT=10002
 export ROS_MASTER_URI=http://jz:$PORT/
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=1
 source /home/kychen/projects/ros_candy/devel/setup.zsh
 source /home/kychen/pyenvs/tensorflow2/bin/activate
 roscore -p $PORT&
