@@ -1,4 +1,4 @@
-export NAME=bs32
+export NAME=trial
 export PORT=1234
 export ROS_MASTER_URI=http://jz:$PORT/
 source /home/imin/ros_candy/devel/setup.zsh
