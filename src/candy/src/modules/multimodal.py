@@ -79,7 +79,7 @@ class MultiModal(Module):
         # self.decoder_ac = MLP(self.d5, [2], self._args, 'decoderac', is_training=is_training, reuse=reuse)
         # self.parts += [self.decoder_cl, self.decoder_cr, self.decoder_el, self.decoder_er, self.decoder_ac]
 
-        self.vae_loss = VAELoss(self.mean[:,:15], self.logsigma[:,:15], self._args, 'vae_loss', is_training=is_training, reuse=reuse)
+        self.vae_loss = VAELoss(self.mean[:,:64], self.logsigma[:,:64], self._args, 'vae_loss', is_training=is_training, reuse=reuse)
 
         self.cl_recons = MSELoss(self.decoder_cl.outputs, self.camera_left, self._args, 'cl_recons_loss', is_training=is_training, reuse=reuse)
         self.cr_recons = MSELoss(self.decoder_cr.outputs, self.camera_right, self._args, 'cr_recons_loss', is_training=is_training, reuse=reuse)
@@ -87,7 +87,7 @@ class MultiModal(Module):
         self.er_recons = MSELoss(self.decoder_er.outputs, self.eye_right, self._args, 'er_recons_loss', is_training=is_training, reuse=reuse)
         # self.ac_recons = MSELoss(self.decoder_ac.outputs, self.actions, self._args, 'ac_recons_loss', is_training=is_training, reuse=reuse)
 
-        beta = 250
+        beta = 1
         self.loss = beta * self.vae_loss.outputs + self.cl_recons.outputs + 0 * self.cr_recons.outputs + 0 * self.el_recons.outputs + 0 * self.er_recons.outputs
         
         return self.loss
