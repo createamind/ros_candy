@@ -87,7 +87,7 @@ class MultiModal(Module):
         self.er_recons = MSELoss(self.decoder_er.outputs, self.eye_right, self._args, 'er_recons_loss', is_training=is_training, reuse=reuse)
         # self.ac_recons = MSELoss(self.decoder_ac.outputs, self.actions, self._args, 'ac_recons_loss', is_training=is_training, reuse=reuse)
 
-        self.loss = 0.1 * self.vae_loss.outputs + self.cl_recons.outputs + self.cr_recons.outputs + self.el_recons.outputs + self.er_recons.outputs
+        self.loss = self.vae_loss.outputs + self.cl_recons.outputs + self.cr_recons.outputs + self.el_recons.outputs + self.er_recons.outputs
         
         return self.loss
     #     #Variable saver
