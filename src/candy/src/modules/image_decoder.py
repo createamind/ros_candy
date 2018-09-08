@@ -17,10 +17,11 @@ class ImageDecoder(Module):
     def _build_net(self, is_training, reuse):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
         
-        conv = lambda x, filters, filter_size: tf.layers.conv2d(x, filters, filter_size, padding='same', 
-                                                kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
-        def conv_bn_relu(x, filters, filter_size):
-            x = conv(x, filters, filter_size)
+        def conv_transpose(x, filters, filter_size, strides=1): 
+            return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding='same', 
+                                              kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
+        def convtrans_bn_relu(x, filters, filter_size, strides=1):
+            x = conv_transpose(x, filters, filter_size, strides)
             x = bn_relu(x, is_training)
             return x
 
@@ -34,20 +35,15 @@ class ImageDecoder(Module):
             
             x = tf.reshape(x, [-1, 5, 5, 512])
             # x = 5, 5, 512
-            x = conv_bn_relu(x, 256, 3)
-            x = tf.image.resize_nearest_neighbor(x, (10, 10))
+            x = convtrans_bn_relu(x, 256, 3, 2)
             # x = 10, 10, 256
-            x = conv_bn_relu(x, 128, 3)
-            x = tf.image.resize_nearest_neighbor(x, (20, 20))
+            x = convtrans_bn_relu(x, 128, 3, 2)
             # x = 20, 20, 128
-            x = conv_bn_relu(x, 64, 5)
-            x = tf.image.resize_nearest_neighbor(x, (40, 40))
+            x = convtrans_bn_relu(x, 64, 5, 2)
             # x = 40, 40, 64
-            x = conv_bn_relu(x, 32, 5)
-            x = tf.image.resize_nearest_neighbor(x, (80, 80))
+            x = convtrans_bn_relu(x, 32, 5, 2)
             # x = 80, 80, 64
-            x = conv(x, 3, 7)
-            x = tf.image.resize_nearest_neighbor(x, (320, 320))
+            x = conv_transpose(x, 3, 7, 4)
             x = tf.nn.tanh(x)
             # x = 320, 320, 3
         if not reuse:
