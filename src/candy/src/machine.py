@@ -37,14 +37,14 @@ class Machine(object):
         self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
 
-        z = self.multimodal_train.mean
-        test_z = self.multimodal_test.mean
+        z = self.multimodal_train.z
+        test_z = self.multimodal_test.z
 
-        # z = tf.concat([z[:,:15], self.speed], 1)
-        # test_z = tf.concat([test_z[:,:15], self.test_speed], 1)
+        z = tf.concat([z, self.speed], 1)
+        test_z = tf.concat([test_z, self.test_speed], 1)
 
-        z = tf.clip_by_value(z, -5, 5)
-        test_z = tf.clip_by_value(test_z, -5, 5)
+        # z = tf.clip_by_value(z, -5, 5)
+        # test_z = tf.clip_by_value(test_z, -5, 5)
 
         self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
 
@@ -54,11 +54,11 @@ class Machine(object):
         self.variable_restore_parts = [self.multimodal_train, self.multimodal_test, self.ppo]
         self.variable_save_optimize_parts = [self.multimodal_train, self.ppo]
 
-        total_loss = self.multimodal_train.loss + 0 * self.ppo.loss
+        total_loss = self.multimodal_train.loss + 5 * self.ppo.loss
 
         #Not Turn Quickly Loss:
         self.smooth_loss = MSELoss(self.ppo.train_model.a0[:,1], self.multimodal_train.actions[:,1], args, 'smooth_loss', is_training=self.is_training, reuse=False)
-        total_loss += 0 * self.smooth_loss.outputs
+        total_loss += self.smooth_loss.outputs
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
