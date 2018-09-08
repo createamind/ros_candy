@@ -41,6 +41,9 @@ class ImageDecoder(Module):
             x = tf.image.resize_nearest_neighbor(x, (20, 20))
             # x = 20, 20, 128
             x = conv_bn_relu(x, 64, 5)
+            x = tf.image.resize_nearest_neighbor(x, (40, 40))
+            # x = 40, 40, 64
+            x = conv_bn_relu(x, 32, 5)
             x = tf.image.resize_nearest_neighbor(x, (80, 80))
             # x = 80, 80, 64
             x = conv(x, 3, 7)

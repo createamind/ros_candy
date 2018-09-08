@@ -32,11 +32,14 @@ class ImageEncoder(Module):
             tf.summary.image(self._name, timage[:1])
 
         with tf.variable_scope('encoder', reuse=reuse) as _:
-            # x = 320, 320, 3
-            x = conv_bn_relu(x, 64, 7, 4)
+            # x = 320, 32, 3
+            x = conv_bn_relu(x, 32, 7, 4)
 
-            # x = 80, 80, 64
-            x = conv_bn_relu(x, 128, 5, 4)
+            # x = 80, 80, 3
+            x = conv_bn_relu(x, 64, 5, 2)
+
+            # x = 40, 40, 64
+            x = conv_bn_relu(x, 128, 5, 2)
 
             # x = 20, 20, 128
             x = conv_bn_relu(x, 256, 3, 2)
