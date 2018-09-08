@@ -22,25 +22,25 @@ class ImageEncoder(Module):
 
         with tf.variable_scope('encoder', reuse=reuse) as _:
             # x = B * 320 * 320 * 8 * 3
-            x = tf.nn.leaky_relu(tf.layers.conv2d(x, 16, [4, 4], strides=(2, 2), padding='SAME', 
+            x = tf.nn.relu(tf.layers.conv2d(x, 16, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
             # x = B * 160 * 160 * 8 * 32
-            x = tf.nn.leaky_relu(tf.layers.conv2d(x, 64, [4, 4], strides=(2, 2), padding='SAME', 
+            x = tf.nn.relu(tf.layers.conv2d(x, 64, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
                 
             # x = B * 40 * 40 * 4 * 64
-            x = tf.nn.leaky_relu(tf.layers.conv2d(x, 128, [4, 4], strides=(2, 2), padding='SAME', 
+            x = tf.nn.relu(tf.layers.conv2d(x, 128, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
 
             # x = B * 20 * 20 * 4 * 128
-            x = tf.nn.leaky_relu(tf.layers.conv2d(x, 256, [4, 4], strides=(2, 2), padding='SAME', 
+            x = tf.nn.relu(tf.layers.conv2d(x, 256, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
 
-            x = tf.nn.leaky_relu(tf.layers.conv2d(x, 512, [4, 4], strides=(2, 2), padding='SAME', 
+            x = tf.nn.relu(tf.layers.conv2d(x, 512, [4, 4], strides=(2, 2), padding='SAME', 
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']),
                 kernel_initializer=tf.contrib.layers.xavier_initializer()))
             # x = B * 10 * 10 * 2 * 32
