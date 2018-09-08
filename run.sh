@@ -1,7 +1,7 @@
-export NAME=nobn_bigmid_leaky_in
-export PORT=10003
+export NAME=xinweireal
+export PORT=10000
 export ROS_MASTER_URI=http://jz:$PORT/
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 source /home/kychen/projects/ros_candy/devel/setup.zsh
 source /home/kychen/pyenvs/tensorflow2/bin/activate
 roscore -p $PORT&
