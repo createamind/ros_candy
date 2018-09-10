@@ -40,11 +40,11 @@ class Machine(object):
         z = self.multimodal_train.z
         test_z = self.multimodal_test.z
 
-        z = tf.concat([z, self.speed], 1)
-        test_z = tf.concat([test_z, self.test_speed], 1)
+        # z = tf.concat([z, self.speed], 1)
+        # test_z = tf.concat([test_z, self.test_speed], 1)
 
-        # z = tf.clip_by_value(z, -5, 5)
-        # test_z = tf.clip_by_value(test_z, -5, 5)
+        z = tf.clip_by_value(z, -5, 5)
+        test_z = tf.clip_by_value(test_z, -5, 5)
 
         self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
 
