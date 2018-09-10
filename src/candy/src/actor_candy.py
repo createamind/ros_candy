@@ -31,7 +31,6 @@ if __name__ == '__main__':
         '-n', '--name',
         help='name')
     args = argparser.parse_args()
-    rospy.init_node('trainer_candy')
     machine = Machine(args.name, summary=False)
 
     
