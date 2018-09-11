@@ -14,7 +14,7 @@ class ImageEncoder(Module):
         self._inputs = inputs
         super(ImageEncoder, self).__init__(*args, **kwargs)
 
-    def _build_net(self, is_training, reuse):
+    def _build_net(self, is_training):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
         
         def conv(x, filters, filter_size, strides=1): 
@@ -27,11 +27,11 @@ class ImageEncoder(Module):
 
         x = self._inputs
         
-        if not reuse:
+        if not self._reuse:
             timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
             tf.summary.image(self._name, timage[:1])
 
-        with tf.variable_scope('encoder', reuse=reuse) as _:
+        with tf.variable_scope('encoder', reuse=self._reuse) as _:
             # x = 320, 32, 3
             x = conv_bn_relu(x, 32, 7, 4)
 

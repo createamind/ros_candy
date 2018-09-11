@@ -14,7 +14,7 @@ class ImageDecoder(Module):
         self._inputs = inputs
         super(ImageDecoder, self).__init__(*args, **kwargs)
 
-    def _build_net(self, is_training, reuse):
+    def _build_net(self, is_training):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
         
         def conv_transpose(x, filters, filter_size, strides=1): 
@@ -26,7 +26,7 @@ class ImageDecoder(Module):
             return x
 
         x = self._inputs
-        with tf.variable_scope('decoder', reuse=reuse) as _:
+        with tf.variable_scope('decoder', reuse=self._reuse) as _:
             x = tf.layers.dense(x, 512, 
                                 kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
             x = tf.layers.dense(x, 12800, 
@@ -46,7 +46,7 @@ class ImageDecoder(Module):
             x = conv_transpose(x, 3, 7, 4)
             x = tf.nn.tanh(x)
             # x = 320, 320, 3
-        if not reuse:
+        if not self._reuse:
             timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
             tf.summary.image(self._name, timage[:1])
         return x
