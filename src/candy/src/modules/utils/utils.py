@@ -296,6 +296,7 @@ def q_explained_variance(qpred, q):
 # kaiming initializer
 def kaiming_initializer(uniform=False, seed=None, dtype=tf.float32):
     return tf.contrib.layers.variance_scaling_initializer(factor=2, uniform=uniform, seed=seed, dtype=dtype)
+
 # xavier initializer
 def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
     return tf.contrib.layers.variance_scaling_initializer(factor=1, uniform=uniform, seed=seed, dtype=dtype)
@@ -304,9 +305,11 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
 def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
+# mean square error
 def mean_square_error(labels, predictions, scope=None):
     return tf.reduce_mean(tf.losses.mean_squared_error(labels, predictions))
 
+# load arguments from args.yaml
 def load_args():
     with open(os.path.join(sys.path[0], 'args.yaml'), 'r') as f:
         try:
@@ -315,6 +318,7 @@ def load_args():
         except yaml.YAMLError as exc:
             print(exc)
 
+# save args to args.yaml
 def save_args(args):
     with open(os.path.join(sys.path[0], 'args.yaml'), 'w') as f:
         try:
