@@ -197,7 +197,7 @@ class PPO(object):
         # 	self.saver.restore(sess, model_filename)
         # 	return
 
-        if os.path.isfile(model_filename + '.data-00000-of-00001'):
+        if os.path.isfile(model_filename):
             self._saver.restore(sess, model_filename)
             return
 

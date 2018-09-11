@@ -1,6 +1,8 @@
 from __future__ import print_function, division, absolute_import
 
 import os
+import sys
+import yaml
 import gym
 import numpy as np
 import tensorflow as tf
@@ -302,3 +304,13 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
 def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
+def load_args():
+    with open(os.path.join(sys.path[0], "args.yaml"), 'r') as f:
+        try:
+            t = yaml.load(f)
+            return t
+        except yaml.YAMLError as exc:
+            print(exc)
+
+def mean_square_error(labels, predictions, scope=None):
+    return tf.reduce_mean(tf.losses.mean_squared_error(labels, predictions))

@@ -104,7 +104,6 @@ class Carla_Wrapper(object):
 
 
     def pre_process(self, inputs, refresh=False):
-
         images, control, reward, std_control, manual, speed = inputs
         images = copy.deepcopy(images)
         for i, _ in enumerate(images):

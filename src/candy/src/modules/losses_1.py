@@ -9,10 +9,10 @@ class MSELoss(Module):
         self._label = label
         super(MSELoss, self).__init__(*args, **kwargs)
 
-    def _build_net(self, is_training, reuse):
+    def _build_net(self, is_training):
         
         loss = tf.reduce_mean(tf.losses.mean_squared_error(self._label, self._predict))
-        if reuse == False: # Indicating that is_test = False
+        if self._reuse == False: # Indicating that is_test = False
             tf.summary.scalar(self._name, loss)
 
         return loss
@@ -25,10 +25,10 @@ class VAELoss(Module):
         self._logsigma = logsigma
         super(VAELoss, self).__init__(*args, **kwargs)
 
-    def _build_net(self, is_training, reuse):
-        const = 1 / (self._args['batch_size'] * self._args['x_dim'] * self._args['y_dim'])
+    def _build_net(self, is_training):
+        const = 1 / (self._args['batch_size'] * 320 * 320)
         loss = const * -0.5 * tf.reduce_sum(1.0 + 2.0 * self._logsigma - tf.square(self._mu) - tf.exp(2 * self._logsigma))
-        if reuse == False: # Indicating that is_test = False
+        if self._reuse == False: # Indicating that is_test = False
             tf.summary.scalar(self._name, loss)
         return loss
 

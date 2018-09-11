@@ -31,7 +31,7 @@ class ImageEncoder(Module):
             timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
             tf.summary.image(self._name, timage[:1])
 
-        with tf.variable_scope('encoder', reuse=self._reuse) as _:
+        with tf.variable_scope('encoder', reuse=self._reuse):
             # x = 320, 32, 3
             x = conv_bn_relu(x, 32, 7, 4)
 

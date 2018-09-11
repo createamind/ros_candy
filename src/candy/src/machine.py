@@ -6,7 +6,6 @@ from modules.ppo import PPO
 
 import tensorflow as tf
 import numpy as np
-import yaml
 import os
 import datetime
 import functools
@@ -17,8 +16,9 @@ from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
 from tqdm import tqdm
 import rospy
-from modules.losses import MSELoss
-
+from modules.utils.utils import mean_square_error
+from modules.utils.utils import load_args
+import random
 import sys
 if not (sys.version_info[0] < 3):
     print = functools.partial(print, flush=True)
@@ -26,7 +26,7 @@ if not (sys.version_info[0] < 3):
 class Machine(object):
     def __init__(self):
 
-        args = self.get_args()
+        args = load_args()
         self.args = args
 
         #Building Graph
@@ -40,16 +40,10 @@ class Machine(object):
         z = self.multimodal_train.mean
         test_z = self.multimodal_test.mean
 
-        # z = tf.concat([z[:,:15], self.speed], 1)
-        # test_z = tf.concat([test_z[:,:15], self.test_speed], 1)
-
         z = tf.clip_by_value(z, -5, 5)
         test_z = tf.clip_by_value(test_z, -5, 5)
 
         self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
-
-        # self.test_vae_loss.inference()
-        # z = self.c3d_encoder.inference()
 
         self.variable_restore_parts = [self.multimodal_train, self.multimodal_test, self.ppo]
         self.variable_save_optimize_parts = [self.multimodal_train, self.ppo]
@@ -57,8 +51,8 @@ class Machine(object):
         total_loss = self.multimodal_train.loss + 0 * self.ppo.loss
 
         #Not Turn Quickly Loss:
-        self.smooth_loss = MSELoss(self.ppo.train_model.a0[:,1], self.multimodal_train.actions[:,1], args, 'smooth_loss', is_training=self.is_training, reuse=False)
-        total_loss += 0 * self.smooth_loss.outputs
+        self.smooth_loss = mean_square_error(self.multimodal_train.actions[:,1], self.ppo.train_model.a0[:,1], 'smooth_loss')
+        total_loss += 0 * self.smooth_loss
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
@@ -95,22 +89,16 @@ class Machine(object):
 
         print('Model Started!')
 
-    def get_args(self):
-        with open(os.path.join(sys.path[0], "args.yaml"), 'r') as f:
-            try:
-                t = yaml.load(f)
-                return t
-            except yaml.YAMLError as exc:
-                print(exc)
-
     def step(self, obs, state):
         # mask = np.zeros(1)
         td_map = {self.ppo.act_model.S:state}
 
-        td_map[self.multimodal_test.camera_left] = np.array([obs[0][0]])
-        td_map[self.multimodal_test.camera_right] = np.array([obs[0][1]])
-        td_map[self.multimodal_test.eye_left] = np.array([obs[0][2]])
-        td_map[self.multimodal_test.eye_right] = np.array([obs[0][3]])
+        camera_x = np.array([obs[0][random.randint(0, 1)]])
+        eye_x1 = np.array([obs[0][2]])
+        eye_x2 = np.array([obs[0][3]])
+        td_map[self.multimodal_test.camera_x] = camera_x
+        td_map[self.multimodal_test.eye_x1] = eye_x1
+        td_map[self.multimodal_test.eye_x2] = eye_x2
         td_map[self.multimodal_test.actions] = np.array([obs[2]])
 
         # td_map[self.test_raw_image] = np.array([obs[0][1]])
@@ -168,25 +156,25 @@ class Machine(object):
 
         td_map[self.ppo.std_action] = std_actions
         td_map[self.ppo.std_mask] = manual
-
-        td_map[self.multimodal_train.camera_left] = np.array([ob[0][0] for ob in obs])
-        td_map[self.multimodal_train.camera_right] = np.array([ob[0][1] for ob in obs])
-        td_map[self.multimodal_train.eye_left] = np.array([ob[0][2] for ob in obs])
-        td_map[self.multimodal_train.eye_right] = np.array([ob[0][3] for ob in obs])
+        
+        camera_x = np.array([ob[0][random.randint(0, 1)] for ob in obs])
+        eye_x1 = np.array([ob[0][2] for ob in obs])
+        eye_x2 = np.array([ob[0][3] for ob in obs])
+        td_map[self.multimodal_train.camera_x] = camera_x
+        td_map[self.multimodal_train.eye_x1] = eye_x1
+        td_map[self.multimodal_train.eye_x2] = eye_x2
         td_map[self.multimodal_train.actions] = np.array([ob[2] for ob in obs])
 
         td_map[self.speed] = np.array([[ob[1]] for ob in obs])
 
-        td_map[self.multimodal_test.camera_left] = np.array([obs[0][0][0]])
-        td_map[self.multimodal_test.camera_right] = np.array([obs[0][0][1]])
-        td_map[self.multimodal_test.eye_left] = np.array([obs[0][0][2]])
-        td_map[self.multimodal_test.eye_right] = np.array([obs[0][0][3]])
+        camera_x = np.array([obs[0][0][random.randint(0, 1)]])
+        eye_x1 = np.array([obs[0][0][2]])
+        eye_x2 = np.array([obs[0][0][3]])
+        td_map[self.multimodal_test.camera_x] = camera_x
+        td_map[self.multimodal_test.eye_x1] = eye_x1
+        td_map[self.multimodal_test.eye_x2] = eye_x2
         td_map[self.multimodal_test.actions] = np.array([obs[0][2]])
         td_map[self.test_speed] = np.array([[obs[0][1]]]) # speed
-
-        # td_map[self.test_raw_image] = np.array([obs[0][1]])
-        # td_map[self.test_raw_image] = np.array([obs[0][2]])
-
 
         summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
         if global_step % 10 == 0:
