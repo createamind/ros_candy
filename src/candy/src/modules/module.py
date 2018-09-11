@@ -22,7 +22,7 @@ class Module(object):
 class ModalOps(Module):
     def __init__(self, args, name, is_training=False, reuse=False):
         super(ModalOps, self).__init__(args, name, is_training, reuse)
-        
+
     def optimize(self, loss):
         learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
         beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
@@ -45,7 +45,7 @@ class ModalOps(Module):
     def variable_restore(self, sess):
         if self._saver is not None:
             model_filename = os.path.join(sys.path[0], "saveimage/", self._name)
-            if os.path.isfile(model_filename):
+            if os.path.isfile(model_filename + '.data-00000-of-00001'):
                 self._saver.restore(sess, model_filename)
                 return
     
