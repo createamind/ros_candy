@@ -304,13 +304,20 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
 def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
+def mean_square_error(labels, predictions, scope=None):
+    return tf.reduce_mean(tf.losses.mean_squared_error(labels, predictions))
+
 def load_args():
-    with open(os.path.join(sys.path[0], "args.yaml"), 'r') as f:
+    with open(os.path.join(sys.path[0], 'args.yaml'), 'r') as f:
         try:
             t = yaml.load(f)
             return t
         except yaml.YAMLError as exc:
             print(exc)
 
-def mean_square_error(labels, predictions, scope=None):
-    return tf.reduce_mean(tf.losses.mean_squared_error(labels, predictions))
+def save_args(args):
+    with open(os.path.join(sys.path[0], 'args.yaml'), 'w') as f:
+        try:
+            yaml.dump(args, f)
+        except yaml.YAMLError as exc:
+            print(exc)

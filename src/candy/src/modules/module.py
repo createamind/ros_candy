@@ -1,6 +1,8 @@
 import tensorflow as tf
 import os
 import sys
+import yaml
+from modules.utils.utils import save_args
 
 class Module(object):
     def __init__(self, args, name, is_training=False, reuse=False):
@@ -44,11 +46,13 @@ class ModalOps(Module):
 
     def variable_restore(self, sess):
         if self._saver is not None:
-            model_filename = os.path.join(sys.path[0], "saveimage/", self._name)
-            if os.path.isfile(model_filename + '.data-00000-of-00001'):
-                self._saver.restore(sess, model_filename)
+            path_prefix = self._args['path_prefix'] if 'path_prefix' in self._args
+            if os.path.isfile(path_prefix):
+                self._saver.restore(sess, path_prefix)
                 return
     
     def save(self, sess):
         if self._saver:
-            self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)))
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)))
+            self._args['path_prefix'] = path_prefix
+            save_args({'path_prefix', path_prefix})
