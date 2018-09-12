@@ -33,13 +33,16 @@ class ImageEncoder(Module):
 
         with tf.variable_scope('encoder', reuse=self._reuse):
             # x = 320, 32, 3
-            x = conv_bn_relu(x, 32, 7, 4)
-
-            # x = 80, 80, 3
+            x = conv_bn_relu(x, 16, 7, 2)
+            
+            # x = 160, 160, 16
+            x = conv_bn_relu(x, 32, 5, 2)
+            
+            # x = 80, 80, 32
             x = conv_bn_relu(x, 64, 5, 2)
 
             # x = 40, 40, 64
-            x = conv_bn_relu(x, 128, 5, 2)
+            x = conv_bn_relu(x, 128, 3, 2)
 
             # x = 20, 20, 128
             x = conv_bn_relu(x, 256, 3, 2)
@@ -47,7 +50,7 @@ class ImageEncoder(Module):
             # x = 10, 10, 256
             x = conv_bn_relu(x, 512, 3, 2)
             
-            # x = 5, 5, 256
+            # x = 5, 5, 512
             x = tf.reshape(x, [-1, 12800])
 
             x = tf.layers.dense(x, 512, 

@@ -35,15 +35,23 @@ class ImageDecoder(Module):
             
             x = tf.reshape(x, [-1, 5, 5, 512])
             # x = 5, 5, 512
+
             x = convtrans_bn_relu(x, 256, 3, 2)
             # x = 10, 10, 256
+            
             x = convtrans_bn_relu(x, 128, 3, 2)
             # x = 20, 20, 128
+            
             x = convtrans_bn_relu(x, 64, 5, 2)
             # x = 40, 40, 64
+            
             x = convtrans_bn_relu(x, 32, 5, 2)
-            # x = 80, 80, 64
-            x = conv_transpose(x, 3, 7, 4)
+            # x = 80, 80, 32
+            
+            x = convtrans_bn_relu(x, 16, 5, 2)
+            # x = 160, 160, 16
+            
+            x = conv_transpose(x, 3, 7, 2)
             x = tf.nn.tanh(x)
             # x = 320, 320, 3
         if not self._reuse:
