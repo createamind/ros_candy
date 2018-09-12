@@ -55,6 +55,12 @@ class ImageDecoder(Module):
             x = tf.nn.tanh(x)
             # x = 320, 320, 3
         if not self._reuse:
+            with tf.variable_scope('decoder', reuse=True):
+                w = tf.get_variable('conv2d_transpose_4/kernel')
+                tf.summary.histogram('conv_trans4_weights', w)
+                w = tf.get_variable('dense/kernel')
+                tf.summary.histogram('dense_weights', w)
+        if not self._reuse:
             timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
             tf.summary.image(self._name, timage[:1])
         return x

@@ -328,7 +328,6 @@ def save_args(args, args_to_update=None, filename='args.yaml'):
             try:
                 args_to_update.update(args)
                 yaml.dump(args_to_update, f)
-                print(args_to_update)
             except yaml.YAMLError as exc:
                 print(exc)
     else:
@@ -337,7 +336,6 @@ def save_args(args, args_to_update=None, filename='args.yaml'):
                 args_to_update = yaml.load(f)
                 args_to_update.update(args)
                 yaml.dump(args_to_update, f)
-                print(args_to_update)
             except yaml.YAMLError as exc:
                 print(exc)
         

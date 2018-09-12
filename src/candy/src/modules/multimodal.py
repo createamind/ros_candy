@@ -42,6 +42,9 @@ class MultiModal(ModalOps):
             self.sample_z = self.mean + sigma * epsilon
 
             self.camera_sample_z, self.eye_sample_z1, self.eye_sample_z2 = tf.split(self.sample_z, 3, 1)
+            tf.summary.histogram('camera_z', self.camera_sample_z)
+            tf.summary.histogram('left_eye_z', self.eye_sample_z1)
+            tf.summary.histogram('right_eye_z', self.eye_sample_z2)
 
         self.camera_reconstruction = ImageDecoder(self.camera_sample_z, self._args, 'camera_decoder', is_training=is_training, reuse=self._reuse).outputs
         self.eye_reconstruction1 = ImageDecoder(self.eye_sample_z1, self._args, 'left_eye_decoder', is_training=is_training, reuse=self._reuse).outputs
@@ -57,9 +60,11 @@ class MultiModal(ModalOps):
             MAX_BETA = 1
             beta = tf.get_variable('beta', shape=(), initializer=tf.constant_initializer([0.01]), trainable=False, dtype=tf.float32)
             new_beta = tf.assign(beta, tf.minimum(1.01 * beta, MAX_BETA))
-        
+
+            const = 1.0 / (160**2)
             with tf.control_dependencies([new_beta]):
-                self.loss = self.camera_reconstruction_error + self.eye_reconstruction_error1 + self.eye_reconstruction_error2 + beta * self.KL_loss + 0 * l2_loss
+                self.loss = self.camera_reconstruction_error + self.eye_reconstruction_error1 \
+                            + self.eye_reconstruction_error2 + const * beta * self.KL_loss + l2_loss
         
             tf.summary.scalar('beta', beta)
             tf.summary.scalar('KL_loss', self.KL_loss)

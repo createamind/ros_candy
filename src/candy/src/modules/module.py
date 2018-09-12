@@ -29,7 +29,7 @@ class ModalOps(Module):
         learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
         beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
         beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
-        grad_clip = self._args[self._name]['grad_clip'] if 'grad_clip' in self._args[self._name] else 5
+        grad_clip = self._args[self._name]['grad_clip'] if 'grad_clip' in self._args[self._name] else 10
         
         with tf.variable_scope(self._name, reuse=self._reuse):
             with tf.variable_scope('optimizer', reuse=self._reuse):
@@ -38,6 +38,8 @@ class ModalOps(Module):
                 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
                 with tf.control_dependencies(update_ops):
                     grad_var_pairs = self._optimizer.compute_gradients(loss, var_list=tf.trainable_variables(self._name))
+                    if not self._reuse:
+                        tf.summary.histogram('gradient', grad_var_pairs[0][0])
                     grad_var_pairs = [(tf.clip_by_norm(grad, grad_clip), var) for grad, var in grad_var_pairs]
 
                     opt_op = self._optimizer.apply_gradients(grad_var_pairs)

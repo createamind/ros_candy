@@ -57,5 +57,10 @@ class ImageEncoder(Module):
                                 kernel_initializer=kaiming_initializer(), kernel_regularizer=l2_regularizer)
             x = bn_relu(x, is_training)
             x = tf.layers.dense(x, 128, kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
-
+        if not self._reuse:
+            with tf.variable_scope('encoder', reuse=True):
+                w = tf.get_variable('conv2d/kernel')
+                tf.summary.histogram('conv_weights', w)
+                w = tf.get_variable('dense_1/kernel')
+                tf.summary.histogram('dense1_weights', w)
         return x
