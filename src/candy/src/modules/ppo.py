@@ -9,6 +9,7 @@ import gym
 from gym.spaces import Box, Discrete, Tuple
 # from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm
 from modules.utils.distributions import make_pdtype
+from modules.utils.utils import save_args
 import sys
 from tensorflow.contrib import rnn
 
@@ -19,7 +20,7 @@ class LstmPolicy(object):
 
     def __init__(self, args, name, X, nbatch, nsteps, nlstm=10, reuse=False):
         nenv = nbatch // nsteps
-        self.args = args
+        self._args = args
         self._name = name
         self.pdtype = make_pdtype(Box(low=np.array([-1.0,-1.0], dtype=np.float32), high=np.array([1.0,1.0],dtype=np.float32)))
         # X, processed_x = observation_input(ob_space, nbatch)
@@ -35,8 +36,8 @@ class LstmPolicy(object):
 
             o, snew = cell(h, S)
 
-            h5 = tf.layers.dense(o, 4, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self._name]['weight_decay']))
-            vf = tf.layers.dense(o, 1, kernel_regularizer=tf.contrib.layers.l2_regularizer(self.args[self._name]['weight_decay']))
+            h5 = tf.layers.dense(o, 4, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']))
+            vf = tf.layers.dense(o, 1, kernel_regularizer=tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay']))
             
             # h5 = tf.Print(h5, [h5], summarize=15)
             h5 = tf.clip_by_value(h5, -5, 5)
@@ -73,7 +74,7 @@ class PPO(object):
     def __init__(self, args, name, z, test_z, ent_coef, vf_coef, max_grad_norm):
         # sess = tf.get_default_session()
 
-        self.args = args
+        self._args = args
         self._name = name
         act_model = LstmPolicy(args, 'ppo', test_z, 1, 1, reuse=False)
         train_model = LstmPolicy(args, 'ppo', z, args['batch_size'], args['batch_size'], reuse=True)
@@ -146,7 +147,7 @@ class PPO(object):
 
         imitation_loss = tf.reduce_mean(tf.boolean_mask(imitation_loss, self.std_mask))
         imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
-        loss = 0 * loss + self.args['imitation_coefficient'] * imitation_loss
+        loss = 0 * loss + self._args['imitation_coefficient'] * imitation_loss
    
         tf.summary.scalar('actionloss', action_loss)
         tf.summary.scalar('valueloss', value_loss)
@@ -183,24 +184,28 @@ class PPO(object):
 
 
     def optimize(self, loss):
-        self.opt = tf.train.AdamOptimizer(learning_rate=self.args[self._name]['learning_rate'])
+        self.opt = tf.train.AdamOptimizer(learning_rate=self._args[self._name]['learning_rate'])
         gvs = self.opt.compute_gradients(loss, var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name))
         # gvs = [(tf.clip_by_norm(grad, 5), var) for grad, var in gvs if not grad is None]
         opt_op = self.opt.apply_gradients(gvs)
         return opt_op
 
     def variable_restore(self, sess):
-
-        model_filename = os.path.join(sys.path[0], "saveimage/", self._name)
-        # if os.path.isfile(model_filename + '.meta'):
-        # 	self.saver = tf.train.import_meta_graph(model_filename + '.meta')
-        # 	self.saver.restore(sess, model_filename)
-        # 	return
-
-        if os.path.isfile(model_filename):
-            self._saver.restore(sess, model_filename)
-            return
+        if self._saver is not None:
+            key = self._name + '_path_prefix'
+            no_such_file = 'Missing_file'
+            path_prefix = self._args[key] if key in self._args else no_such_file
+            if path_prefix != no_such_file:
+                try:
+                    self._saver.restore(sess, path_prefix)
+                    print("Params for {} are restored".format(self._name))
+                except:
+                    del self._args[key]
+                return
 
     def save(self, sess):
-        if self._saver is not None:
-            self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)), global_step=None, write_meta_graph=False, write_state=False)
+        if self._saver:
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/trial/', str(self._name)))
+            key = self._name + '_path_prefix'
+            self._args[key] = path_prefix
+            save_args({key: path_prefix}, self._args)
