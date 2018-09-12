@@ -27,15 +27,14 @@ class Machine(object):
     def __init__(self):
 
         args = load_args('args.yaml')
-        self.args = args
-        
+        self._args = args
 
         #Building Graph
         self.is_training = tf.placeholder(tf.bool, shape=(None), name='is_training')
-        self.multimodal_train = MultiModal(False, args, 'multimodal', is_training=self.is_training, reuse=False)
-        self.multimodal_test = MultiModal(True, args, 'multimodal', is_training=self.is_training, reuse=True)
+        self.multimodal_train = MultiModal(False, self._args, 'multimodal', is_training=self.is_training, reuse=False)
+        self.multimodal_test = MultiModal(True, self._args, 'multimodal', is_training=self.is_training, reuse=True)
 
-        self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1), name='speed')
+        self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
 
         z = self.multimodal_train.mean
@@ -44,7 +43,7 @@ class Machine(object):
         z = tf.clip_by_value(z, -5, 5)
         test_z = tf.clip_by_value(test_z, -5, 5)
 
-        self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
+        self.ppo = PPO(self._args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
 
         self.variable_restore_parts = [self.multimodal_train, self.multimodal_test, self.ppo]
         self.variable_save_optimize_parts = [self.multimodal_train, self.ppo]
@@ -71,7 +70,7 @@ class Machine(object):
 
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        self.writer = tf.summary.FileWriter('/tmp/iminlogs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
+        self.writer = tf.summary.FileWriter('/tmp/iminlogs/trial/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
 
         with tf.Graph().as_default() as g:
             tf.Graph.finalize(g)
@@ -130,7 +129,7 @@ class Machine(object):
         #     self.params[ind].load(mat[ind], self.sess)
         for part in self.variable_restore_parts:
             part.variable_restore(self.sess)
-            
+
         print('Weights Updated!')
 
     def train(self, inputs, global_step):
@@ -149,7 +148,7 @@ class Machine(object):
         td_map = {self.ppo.A:actions, self.ppo.ADV:advs, self.ppo.R:rewards, self.ppo.OLDNEGLOGPAC:neglogpacs, self.ppo.OLDVPRED:values}
         td_map[self.is_training] = True
 
-        # mask = np.zeros(self.args['batch_size'])
+        # mask = np.zeros(self._args['batch_size'])
         td_map[self.ppo.train_model.S] = np.squeeze(states, 1)
         # td_map[self.ppo.train_model.M] = mask
 
