@@ -17,7 +17,7 @@ from candy.srv import Step, Value, UpdateWeights
 from tqdm import tqdm
 import rospy
 from modules.utils.utils import mean_square_error
-from modules.utils.utils import load_args
+from modules.utils.utils import default_path, load_args
 import random
 import sys
 if not (sys.version_info[0] < 3):
@@ -26,8 +26,9 @@ if not (sys.version_info[0] < 3):
 class Machine(object):
     def __init__(self):
 
-        args = load_args()
+        args = load_args('args.yaml')
         self.args = args
+        
 
         #Building Graph
         self.is_training = tf.placeholder(tf.bool, shape=(None), name='is_training')
@@ -110,7 +111,6 @@ class Machine(object):
 
         return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.multimodal_test.loss], td_map)
 
-
     def value(self, obs, state, action):
         raise NotImplementedError
         # mask = np.zeros(1)
@@ -130,9 +130,8 @@ class Machine(object):
         #     self.params[ind].load(mat[ind], self.sess)
         for part in self.variable_restore_parts:
             part.variable_restore(self.sess)
-
+            
         print('Weights Updated!')
-
 
     def train(self, inputs, global_step):
         obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = inputs
@@ -179,7 +178,6 @@ class Machine(object):
         summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
         if global_step % 10 == 0:
             self.writer.add_summary(summary, global_step)
-
 
     def save(self):
         print('Start Saving')
