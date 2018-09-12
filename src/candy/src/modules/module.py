@@ -50,14 +50,16 @@ class ModalOps(Module):
             no_such_file = 'Missing_file'
             path_prefix = self._args[key] if key in self._args else no_such_file
             if path_prefix != no_such_file:
-                self._saver.restore(sess, path_prefix)
-                print("Params for {} are restored".format(self._name))
+                try:
+                    self._saver.restore(sess, path_prefix)
+                    print("Params for {} are restored".format(self._name))
+                except:
+                    del self._args[key]
                 return
     
     def save(self, sess):
         if self._saver:
-            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/', str(self._name)))
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/trial/', str(self._name)))
             key = self._name + '_path_prefix'
             self._args[key] = path_prefix
             save_args({key: path_prefix}, self._args)
-            print("Save Complete")
