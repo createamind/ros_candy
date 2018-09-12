@@ -309,19 +309,33 @@ def bn_relu(layer, training):
 def mean_square_error(labels, predictions, scope=None):
     return tf.reduce_mean(tf.losses.mean_squared_error(labels, predictions))
 
+def default_path(filename):
+    return os.path.join(sys.path[0], filename)
+
 # load arguments from args.yaml
-def load_args():
-    with open(os.path.join(sys.path[0], 'args.yaml'), 'r') as f:
+def load_args(filename='args.yaml'):
+    with open(default_path(filename), 'r') as f:
         try:
-            t = yaml.load(f)
-            return t
+            yaml_f = yaml.load(f)
+            return yaml_f
         except yaml.YAMLError as exc:
             print(exc)
 
 # save args to args.yaml
-def save_args(args):
-    with open(os.path.join(sys.path[0], 'args.yaml'), 'w') as f:
-        try:
-            yaml.dump(args, f)
-        except yaml.YAMLError as exc:
-            print(exc)
+def save_args(args, args_to_update=None, filename='args.yaml'):
+    if args_to_update:
+        with open(default_path(filename), 'w') as f:
+            try:
+                args_to_update.update(args)
+                yaml.dump(args_to_update, f)
+            except yaml.YAMLError as exc:
+                print(exc)
+    else:
+        with open(default_path(filename), 'rw') as f:
+            try:
+                yaml_f = yaml.load(f)
+                yaml_f.update(args)
+                yaml.dump(yaml_f, f)
+            except yaml.YAMLError as exc:
+                print(exc)
+        
