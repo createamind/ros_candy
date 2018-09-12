@@ -59,7 +59,7 @@ class MultiModal(ModalOps):
             new_beta = tf.assign(beta, tf.minimum(1.01 * beta, MAX_BETA))
         
             with tf.control_dependencies([new_beta]):
-                self.loss = self.camera_reconstruction_error + self.eye_reconstruction_error1 + self.eye_reconstruction_error2 + beta * self.KL_loss + l2_loss
+                self.loss = self.camera_reconstruction_error + self.eye_reconstruction_error1 + self.eye_reconstruction_error2 + beta * self.KL_loss + 0 * l2_loss
         
             tf.summary.scalar('beta', beta)
             tf.summary.scalar('KL_loss', self.KL_loss)
