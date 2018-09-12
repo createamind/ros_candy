@@ -18,10 +18,11 @@ class MultiModal(ModalOps):
         super(MultiModal, self).__init__(args, name, **kwargs)
 
     def _build_net(self, is_training):
-        self.camera_x = tf.placeholder(tf.float32, shape=(self.batch_size, self.image_size, self.image_size, 3), name='camera_x')
-        self.eye_x1 = tf.placeholder(tf.float32, shape=(self.batch_size, self.image_size, self.image_size, 3), name='eye_left')
-        self.eye_x2 = tf.placeholder(tf.float32, shape=(self.batch_size, self.image_size, self.image_size, 3), name='eye_right')
-        self.actions = tf.placeholder(tf.float32, shape=(self.batch_size, 2), name='actions')
+        with tf.variable_scope('inputs', reuse=self._reuse):
+            self.camera_x = tf.placeholder(tf.float32, shape=(self.batch_size, self.image_size, self.image_size, 3), name='camera_x')
+            self.eye_x1 = tf.placeholder(tf.float32, shape=(self.batch_size, self.image_size, self.image_size, 3), name='eye_left')
+            self.eye_x2 = tf.placeholder(tf.float32, shape=(self.batch_size, self.image_size, self.image_size, 3), name='eye_right')
+            self.actions = tf.placeholder(tf.float32, shape=(self.batch_size, 2), name='actions')
 
         self.camera_z = ImageEncoder(self.camera_x, self._args, 'camera_encoder', is_training=is_training, reuse=self._reuse).outputs
         self.eye_z1 = ImageEncoder(self.eye_x1, self._args, 'left_eye_encoder', is_training=is_training, reuse=self._reuse).outputs
