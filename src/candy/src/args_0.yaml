@@ -1,0 +1,50 @@
+---
+multimodal:
+    learning_rate: 0.00001
+    weight_decay: 0.1
+ppo:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+camera_encoder:
+    weight_decay: 0.001
+left_eye_encoder:
+    weight_decay: 0.001
+right_eye_encoder:
+    weight_decay: 0.001
+encoderac:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+aggregation:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+de_aggregation:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+camera_decoder:
+    weight_decay: 0.001
+left_eye_decoder:
+    weight_decay: 0.001
+right_eye_decoder:
+    weight_decay: 0.001
+decoderac:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decodercl_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decodercr_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderel_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderer_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+decoderac_future:
+    learning_rate: 0.0005
+    weight_decay: 0.001
+
+imitation_coefficient: 0.9
+batch_size: 64
+image_size: 320

@@ -16,8 +16,9 @@ from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
 from tqdm import tqdm
 import rospy
-from modules.losses import MSELoss
-from modules.utils.utils import load_args
+from modules.utils.utils import mean_square_error
+from modules.utils.utils import default_path, load_args
+import random
 import sys
 if not (sys.version_info[0] < 3):
     print = functools.partial(print, flush=True)
@@ -25,30 +26,24 @@ if not (sys.version_info[0] < 3):
 class Machine(object):
     def __init__(self):
 
-        args = load_args()
-        self.args = args
+        args = load_args('args.yaml')
+        self._args = args
 
         #Building Graph
         self.is_training = tf.placeholder(tf.bool, shape=(None), name='is_training')
-        self.multimodal_train = MultiModal(False, args, 'multimodal', is_training=self.is_training, reuse=False)
-        self.multimodal_test = MultiModal(True, args, 'multimodal', is_training=self.is_training, reuse=True)
+        self.multimodal_train = MultiModal(False, self._args, 'multimodal', is_training=self.is_training, reuse=False)
+        self.multimodal_test = MultiModal(True, self._args, 'multimodal', is_training=self.is_training, reuse=True)
 
-        self.speed = tf.placeholder(tf.float32, shape=(args['batch_size'], 1), name='speed')
+        self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
 
         z = self.multimodal_train.mean
         test_z = self.multimodal_test.mean
 
-        # z = tf.concat([z[:,:15], self.speed], 1)
-        # test_z = tf.concat([test_z[:,:15], self.test_speed], 1)
-
         z = tf.clip_by_value(z, -5, 5)
         test_z = tf.clip_by_value(test_z, -5, 5)
 
-        self.ppo = PPO(args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
-
-        # self.test_vae_loss.inference()
-        # z = self.c3d_encoder.inference()
+        self.ppo = PPO(self._args, 'ppo', z=z, test_z=test_z, ent_coef=0.00000001, vf_coef=1, max_grad_norm=0.5)
 
         self.variable_restore_parts = [self.multimodal_train, self.multimodal_test, self.ppo]
         self.variable_save_optimize_parts = [self.multimodal_train, self.ppo]
@@ -56,8 +51,8 @@ class Machine(object):
         total_loss = self.multimodal_train.loss + 0 * self.ppo.loss
 
         #Not Turn Quickly Loss:
-        self.smooth_loss = MSELoss(self.ppo.train_model.a0[:,1], self.multimodal_train.actions[:,1], args, 'smooth_loss', is_training=self.is_training, reuse=False)
-        total_loss += 0 * self.smooth_loss.outputs
+        self.smooth_loss = mean_square_error(self.multimodal_train.actions[:,1], self.ppo.train_model.a0[:,1], 'smooth_loss')
+        total_loss += 0 * self.smooth_loss
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
@@ -75,7 +70,7 @@ class Machine(object):
 
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        self.writer = tf.summary.FileWriter('/tmp/iminlogs/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
+        self.writer = tf.summary.FileWriter('/tmp/iminlogs/trial/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
 
         with tf.Graph().as_default() as g:
             tf.Graph.finalize(g)
@@ -98,10 +93,12 @@ class Machine(object):
         # mask = np.zeros(1)
         td_map = {self.ppo.act_model.S:state}
 
-        td_map[self.multimodal_test.camera_left] = np.array([obs[0][0]])
-        td_map[self.multimodal_test.camera_right] = np.array([obs[0][1]])
-        td_map[self.multimodal_test.eye_left] = np.array([obs[0][2]])
-        td_map[self.multimodal_test.eye_right] = np.array([obs[0][3]])
+        camera_x = np.array([obs[0][random.randint(0, 1)]])
+        eye_x1 = np.array([obs[0][2]])
+        eye_x2 = np.array([obs[0][3]])
+        td_map[self.multimodal_test.camera_x] = camera_x
+        td_map[self.multimodal_test.eye_x1] = eye_x1
+        td_map[self.multimodal_test.eye_x2] = eye_x2
         td_map[self.multimodal_test.actions] = np.array([obs[2]])
 
         # td_map[self.test_raw_image] = np.array([obs[0][1]])
@@ -112,7 +109,6 @@ class Machine(object):
         # td_map[self.test_steer] = np.array([[obs[2]]])
 
         return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.multimodal_test.loss], td_map)
-
 
     def value(self, obs, state, action):
         raise NotImplementedError
@@ -136,7 +132,6 @@ class Machine(object):
 
         print('Weights Updated!')
 
-
     def train(self, inputs, global_step):
         obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = inputs
 
@@ -153,41 +148,35 @@ class Machine(object):
         td_map = {self.ppo.A:actions, self.ppo.ADV:advs, self.ppo.R:rewards, self.ppo.OLDNEGLOGPAC:neglogpacs, self.ppo.OLDVPRED:values}
         td_map[self.is_training] = True
 
-        # mask = np.zeros(self.args['batch_size'])
+        # mask = np.zeros(self._args['batch_size'])
         td_map[self.ppo.train_model.S] = np.squeeze(states, 1)
         # td_map[self.ppo.train_model.M] = mask
 
         td_map[self.ppo.std_action] = std_actions
         td_map[self.ppo.std_mask] = manual
-        print("shape of observation", obs.shape)
-        print("type of obs", type(obs))
-        print("type of obs[0]", type(obs[0]))
-        print("type of obs[0][0]", type(obs[0][0]))
-        print("type of obs[0][0][0]", type(obs[0][0][0]))
-        print("shape of obs[0][0][0]", obs[0][0][0].shape)
-        td_map[self.multimodal_train.camera_left] = np.array([ob[0][0] for ob in obs])
-        td_map[self.multimodal_train.camera_right] = np.array([ob[0][1] for ob in obs])
-        td_map[self.multimodal_train.eye_left] = np.array([ob[0][2] for ob in obs])
-        td_map[self.multimodal_train.eye_right] = np.array([ob[0][3] for ob in obs])
+        
+        camera_x = np.array([ob[0][random.randint(0, 1)] for ob in obs])
+        eye_x1 = np.array([ob[0][2] for ob in obs])
+        eye_x2 = np.array([ob[0][3] for ob in obs])
+        td_map[self.multimodal_train.camera_x] = camera_x
+        td_map[self.multimodal_train.eye_x1] = eye_x1
+        td_map[self.multimodal_train.eye_x2] = eye_x2
         td_map[self.multimodal_train.actions] = np.array([ob[2] for ob in obs])
 
         td_map[self.speed] = np.array([[ob[1]] for ob in obs])
 
-        td_map[self.multimodal_test.camera_left] = np.array([obs[0][0][0]])
-        td_map[self.multimodal_test.camera_right] = np.array([obs[0][0][1]])
-        td_map[self.multimodal_test.eye_left] = np.array([obs[0][0][2]])
-        td_map[self.multimodal_test.eye_right] = np.array([obs[0][0][3]])
+        camera_x = np.array([obs[0][0][random.randint(0, 1)]])
+        eye_x1 = np.array([obs[0][0][2]])
+        eye_x2 = np.array([obs[0][0][3]])
+        td_map[self.multimodal_test.camera_x] = camera_x
+        td_map[self.multimodal_test.eye_x1] = eye_x1
+        td_map[self.multimodal_test.eye_x2] = eye_x2
         td_map[self.multimodal_test.actions] = np.array([obs[0][2]])
         td_map[self.test_speed] = np.array([[obs[0][1]]]) # speed
-
-        # td_map[self.test_raw_image] = np.array([obs[0][1]])
-        # td_map[self.test_raw_image] = np.array([obs[0][2]])
-
 
         summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
         if global_step % 10 == 0:
             self.writer.add_summary(summary, global_step)
-
 
     def save(self):
         print('Start Saving')

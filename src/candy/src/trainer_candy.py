@@ -25,7 +25,8 @@ if not (sys.version_info[0] < 3):
 	print = functools.partial(print, flush=True)
 
 from machine import Machine
-
+import time
+from modules.utils.utils import timeit
 
 TRAIN_EPOCH = 50
 BATCH_SIZE = load_args()['batch_size']
@@ -35,20 +36,21 @@ buffer = deque(maxlen=MAX_BUFFER_SIZE)
 
 if __name__ == '__main__':
 	rospy.init_node('trainer_candy')
-	machine = Machine()
+
+	machine = timeit(Machine)
 
 	def calculate_difficulty(reward, vaerecon):
 		# return vaerecon * vaerecon * abs(reward)
 		return vaerecon
 
 	def memory_training(msg):
-		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
+		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = timeit(lambda: msgpack.unpackb(msg.data, raw=False, encoding='utf-8'), 'unpack(data)')
+		
 
 		global buffer
 		global global_step
-	
-		buffer.extend(zip(calculate_difficulty(rewards, vaerecons), zip(obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual)))
 
+		buffer.extend(zip(calculate_difficulty(rewards, vaerecons), zip(obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual)))
 		# I don't use priority queue here for efficiency, maybe it really worth a trial
 		# buffer = sorted(buffer, key = lambda y: y[0], reverse=True)
 		# print('Difficulty !', [t[0] for t in buffer[:5]])
@@ -65,19 +67,22 @@ if __name__ == '__main__':
 
 		machine.save()
 
-		rospy.wait_for_service('update_weights')
-		try:
-			update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)
+		timeit(lambda: rospy.wait_for_service('update_weights'), 'rospy.wait_for_service')
 
-			param = machine.sess.run(machine.params)
+		try:
+			update_weights = timeit(lambda: rospy.ServiceProxy('update_weights', UpdateWeights), 'rospy.ServiceProxy')
+			
+			param = timeit(lambda: machine.sess.run(machine.params), 'machine.params')
 			# for each in tqdm(machine.params):
 			# 	param.append(np.array(each.eval(session=machine.sess)))
 			# param = np.array(param)
-			outmsg = msgpack.packb(param, use_bin_type=True)
-			update_weights(outmsg)
+			outmsg = timeit(lambda: msgpack.packb(param, use_bin_type=True), 'msgpack.packb(param)')
+			
+			timeit(lambda: update_weights(outmsg), 'update_weights')
 
 		except rospy.ServiceException as e:
 			print("Service call failed: %s" % e)
 
-	sub = rospy.Subscriber('/train_data', String, memory_training, queue_size=1)
+	sub = timeit(lambda: rospy.Subscriber('/train_data', String, memory_training, queue_size=1, buff_size=2**24), 'rospy.Subscriber')
+
 	rospy.spin()

@@ -26,7 +26,7 @@ class ImageDecoder(Module):
             return x
 
         x = self._inputs
-        with tf.variable_scope('decoder', reuse=self._reuse) as _:
+        with tf.variable_scope('decoder', reuse=self._reuse):
             x = tf.layers.dense(x, 512, 
                                 kernel_initializer=xavier_initializer(), kernel_regularizer=l2_regularizer)
             x = tf.layers.dense(x, 12800, 

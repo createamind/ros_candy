@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from gym import spaces
 from collections import deque
+import time
 
 def sample(logits):
     noise = tf.random_uniform(tf.shape(logits))
@@ -307,7 +308,10 @@ def bn_relu(layer, training):
 
 # mean square error
 def mean_square_error(labels, predictions, scope=None):
-    return tf.reduce_mean(tf.losses.mean_squared_error(labels, predictions))
+    return tf.losses.mean_squared_error(labels, predictions)
+
+def kl_loss(mean, logstd):
+    return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logstd - mean**2 - tf.exp(2 * logstd), axis=1))
 
 def default_path(filename):
     return os.path.join(sys.path[0], filename)
@@ -339,3 +343,10 @@ def save_args(args, args_to_update=None, filename='args.yaml'):
             except yaml.YAMLError as exc:
                 print(exc)
         
+def timeit(func, name=None):
+	start = time.time()
+	result = func()
+	end = time.time()
+	print('Time for {}:'.format(name if name else func.__name__), end - start)
+
+	return result

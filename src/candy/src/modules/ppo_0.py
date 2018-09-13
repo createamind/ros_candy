@@ -15,6 +15,7 @@ from tensorflow.contrib import rnn
 
 HIDDEN = 15
 
+
 class LstmPolicy(object):
 
     def __init__(self, args, name, X, nbatch, nsteps, nlstm=10, reuse=False):
@@ -70,9 +71,8 @@ class LstmPolicy(object):
 
 
 class PPO(object):
-    def __init__(self, args, name, z, ent_coef, vf_coef, max_grad_norm):
+    def __init__(self, args, name, z, test_z, ent_coef, vf_coef, max_grad_norm):
         # sess = tf.get_default_session()
-        test_z = tf.expand_dims(z[0], 0)
         self._args = args
         self._name = name
         act_model = LstmPolicy(args, 'ppo', test_z, 1, 1, reuse=False)
@@ -148,10 +148,10 @@ class PPO(object):
         imitation_loss = tf.where(tf.is_nan(imitation_loss), tf.zeros_like(imitation_loss), imitation_loss)
         loss = 0 * loss + self._args['imitation_coefficient'] * imitation_loss
    
-        # tf.summary.scalar('actionloss', action_loss)
-        # tf.summary.scalar('valueloss', value_loss)
-        # tf.summary.scalar('entropyloss', dist_entropy)
-        # tf.summary.scalar('imitation_loss', imitation_loss)
+        tf.summary.scalar('actionloss', action_loss)
+        tf.summary.scalar('valueloss', value_loss)
+        tf.summary.scalar('entropyloss', dist_entropy)
+        tf.summary.scalar('imitation_loss', imitation_loss)
         # with tf.variable_scope('model'):
         #     params = tf.trainable_variables()
         # grads = tf.gradients(loss, params)
