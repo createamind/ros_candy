@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import os
 import sys
 import yaml
@@ -11,6 +12,7 @@ class BetaVAE(object):
         self.reuse = reuse
         self.z_size = 64
         self.image_size = self._args['image_size']
+        self.epsilon = 1e-8
         
         # params for optimizer
         learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
@@ -31,14 +33,23 @@ class BetaVAE(object):
                 self._saver = None
             
             self._build_graph()
+        
+            # add image summaries at training time
+            with tf.variable_scope('image', reuse=self.reuse):
+                # record an original image
+                timage = tf.cast((tf.clip_by_value(self.inputs, -1, 1) + 1) * 127, tf.uint8)
+                tf.summary.image('original_image', timage[:1])
+                # record a generated image
+                timage = tf.cast((tf.clip_by_value(self.x_mean, -1, 1) + 1) * 127, tf.uint8)
+                tf.summary.image('generated_image', timage[:1])
 
     def _encode(self):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
         
-        def conv(x, filters, filter_size, strides=1): 
+        def conv(x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()): 
             return tf.layers.conv2d(x, filters, filter_size, 
-                                    strides=strides, padding='same', 
-                                    kernel_initializer=utils.kaiming_initializer(), 
+                                    strides=strides, padding=padding, 
+                                    kernel_initializer=kernel_initializer, 
                                     kernel_regularizer=l2_regularizer)
 
         def conv_bn_relu(x, filters, filter_size, strides=1):
@@ -48,71 +59,48 @@ class BetaVAE(object):
             return x
         
         x = self.inputs
-
-        # record an original image
-        if not self.reuse:
-            timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
-            tf.summary.image('original_image', timage[:1])
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):
-            # x = 320, 32, 3
-            x = conv_bn_relu(x, 16, 7, 2)
-            
-            # x = 160, 160, 16
-            x = conv_bn_relu(x, 32, 5, 2)
-            
-            # x = 80, 80, 32
-            x = conv_bn_relu(x, 64, 5, 2)
+            x = conv_bn_relu(x, 32, 4, 2)           # x = 160, 160, 32
+            x = conv_bn_relu(x, 64, 4, 2)           # x = 80, 80, 64
+            x = conv_bn_relu(x, 128, 4, 2)          # x = 40, 40, 128
+            x = conv_bn_relu(x, 256, 4, 2)          # x = 20, 20, 256
+            x = conv_bn_relu(x, 512, 4, 2)          # x = 10, 10, 512
+            x = conv_bn_relu(x, 512, 4, 2)          # x = 5, 5, 512
+            x = conv(x, 2 * self.z_size, 4, padding='valid', kernel_initializer=utils.xavier_initializer())  
+            # x = 1, 1, 2 * z_size
 
-            # x = 40, 40, 64
-            x = conv_bn_relu(x, 128, 3, 2)
-
-            # x = 20, 20, 128
-            x = conv_bn_relu(x, 256, 3, 2)
-
-            # x = 10, 10, 256
-            x = conv_bn_relu(x, 512, 3, 2)
-            
-            # x = 5, 5, 512
-            x = tf.reshape(x, [-1, 12800])
-
-            x = tf.layers.dense(x, 512, 
-                                kernel_initializer=utils.kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = utils.bn_relu(x, self.is_training)
-            x = tf.layers.dense(x, 2 * self.z_size, kernel_initializer=utils.xavier_initializer(), kernel_regularizer=l2_regularizer)
-
-            mean, logstd = tf.split(x, 2, 1)
+            x = tf.reshape(x, [-1, 2 * self.z_size])
+            mean, logsigma = tf.split(x, 2, -1)
 
             # record some weights
         if not self.reuse:
             with tf.variable_scope('encoder', reuse=True):
                 w = tf.get_variable('conv2d/kernel')
                 tf.summary.histogram('conv0_weights', w)
-                w = tf.get_variable('dense_1/kernel')
-                tf.summary.histogram('dense1_weights', w)
 
-        return mean, logstd
+        return mean, logsigma
 
-    def _sample_z(self, mean, logstd):
-        with tf.variable_scope('sample_z', reuse=self.reuse):
-            std = tf.exp(logstd)
+    def _sample_norm(self, mean, logsigma, scope, reuse=None):
+        with tf.variable_scope(scope, reuse=self.reuse if reuse is None else reuse):
+            std = tf.exp(logsigma)
             epsilon = tf.random_normal(tf.shape(mean))
 
             sample_z = mean + std * epsilon
-            tf.summary.histogram('sample_z', sample_z)
+            tf.summary.histogram(scope, sample_z)
 
         return sample_z
 
     def _decode(self, sample_z, reuse):
         l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
         
-        def conv_transpose(x, filters, filter_size, strides=1, kernel_initializer=utils.kaiming_initializer()): 
-            return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding='same', 
+        def conv_transpose(x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()): 
+            return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding=padding, 
                                               kernel_initializer=kernel_initializer, kernel_regularizer=l2_regularizer)
         
-        def convtrans_bn_relu(x, filters, filter_size, strides=1):
-            x = conv_transpose(x, filters, filter_size, strides)
+        def convtrans_bn_relu(x, filters, filter_size, strides=1, padding='same'):
+            x = conv_transpose(x, filters, filter_size, strides, padding=padding)
             x = utils.bn_relu(x, self.is_training)
             return x
 
@@ -120,56 +108,35 @@ class BetaVAE(object):
 
         # decoder net
         with tf.variable_scope('decoder', reuse=reuse):
-            x = tf.layers.dense(x, 512, 
-                                kernel_initializer=utils.xavier_initializer(), kernel_regularizer=l2_regularizer)
-            x = tf.layers.dense(x, 12800, 
-                                kernel_initializer=utils.kaiming_initializer(), kernel_regularizer=l2_regularizer)
-            x = utils.bn_relu(x, self.is_training)
-            
-            x = tf.reshape(x, [-1, 5, 5, 512])
-            # x = 5, 5, 512
+            x = tf.reshape(x, [-1, 1, 1, self.z_size])          # x = 1, 1, z_size
 
-            x = convtrans_bn_relu(x, 256, 3, 2)
-            # x = 10, 10, 256
-            
-            x = convtrans_bn_relu(x, 128, 3, 2)
-            # x = 20, 20, 128
-            
-            x = convtrans_bn_relu(x, 64, 5, 2)
-            # x = 40, 40, 64
-            
-            x = convtrans_bn_relu(x, 32, 5, 2)
-            # x = 80, 80, 32
-            
-            x = convtrans_bn_relu(x, 16, 5, 2)
-            # x = 160, 160, 16
-            
-            x = conv_transpose(x, 3, 7, 2, utils.xavier_initializer())
+            x = convtrans_bn_relu(x, 512, 5, 1, padding='valid')# x = 5, 5, 512
+            x = convtrans_bn_relu(x, 512, 4, 2)                 # x = 10, 10, 512
+            x = convtrans_bn_relu(x, 256, 4, 2)                 # x = 20, 20, 256
+            x = convtrans_bn_relu(x, 128, 4, 2)                 # x = 40, 40, 128
+            x = convtrans_bn_relu(x, 64, 4, 2)                  # x = 80, 80, 64
+            x = convtrans_bn_relu(x, 32, 4, 2)                  # x = 160, 160, 32
+            x = conv_transpose(x, 3, 4, 2, kernel_initializer=utils.xavier_initializer())
             # x = 320, 320, 3
-            outputs = tf.nn.tanh(x)
+
+            x_mean = x
             
         if not self.reuse:
             with tf.variable_scope('decoder', reuse=True):
                 # record some weights
                 w = tf.get_variable('conv2d_transpose_5/kernel')
                 tf.summary.histogram('conv_trans5_weights', w)
-                w = tf.get_variable('dense/kernel')
-                tf.summary.histogram('dense_weights', w)
 
-            # record a generated image
-            timage = tf.cast((tf.clip_by_value(x, -1, 1) + 1) * 127, tf.uint8)
-            tf.summary.image('generated_image', timage[:1])
+        return x_mean
 
-        return outputs
-
-    def _loss(self, mean, logstd, predictions, labels):
+    def _loss(self, mean, logsigma, predictions, labels):
         with tf.variable_scope('loss', reuse=self.reuse):
             with tf.variable_scope('kl_loss', reuse=self.reuse):
-                KL_loss = utils.kl_loss(mean, logstd)
+                KL_loss = utils.kl_loss(mean, logsigma)
                 MAX_BETA = 1
                 beta = tf.get_variable('beta', shape=(), initializer=tf.constant_initializer([0.01]), trainable=False, dtype=tf.float32)
                 new_beta = tf.assign(beta, tf.minimum(1.01 * beta, MAX_BETA))
-                beta_KL = beta * KL_loss
+                beta_KL = beta * KL_loss / (160**2)
 
             with tf.variable_scope('reconstruction_error', reuse=self.reuse):
                 reconstruction_loss = utils.mean_square_error(labels, predictions)
@@ -177,7 +144,7 @@ class BetaVAE(object):
             l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
             
             with tf.control_dependencies([new_beta]):
-                loss = reconstruction_loss + beta_KL + l2_loss
+                loss = reconstruction_loss + beta_KL# + l2_loss
 
             tf.summary.scalar('reconstruction_error', reconstruction_loss)
             tf.summary.scalar('beta', beta)
@@ -204,21 +171,16 @@ class BetaVAE(object):
         return opt_op
 
     def _build_graph(self):
-        self.mean, self.logstd = self._encode()
-        self.sample_z = self._sample_z(self.mean, self.logstd)
-        self.outputs = self._decode(self.sample_z, reuse=self.reuse)
-        self.loss = self._loss(self.mean, self.logstd, self.outputs, self.inputs)
+        self.z_mean, self.z_logsigma = self._encode()
+        self.sample_z = self._sample_norm(self.z_mean, self.z_logsigma, 'sample_z')
+        self.x_mean = self._decode(self.sample_z, reuse=self.reuse)
+        self.loss = self._loss(self.z_mean, self.z_logsigma, self.x_mean, self.inputs)
         self.opt_op = self._optimize(self.loss)
 
-
-    def generate(self, prior=True, num_images=1):
+    def generate(self, sess, num_images=1):
         with tf.variable_scope(self._name, reuse=True):
-            if prior == True:
-                sample_z = tf.random_normal((num_images, self.z_size))
-                outputs = self._decode(sample_z, reuse=True)
-            else:
-                outputs = self.outputs
-            return outputs
+            sample_z = np.random.normal(size=(num_images, self.z_size))
+            return sess.run(self.x_mean, feed_dict={self.sample_z: sample_z})
 
     def variable_restore(self, sess):
         if self._saver:
