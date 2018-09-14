@@ -37,7 +37,7 @@ class Machine(object):
         self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
 
-        z = tf.concat([self.camera.mean, self.left_eye.mean, self.right_eye.mean], 1)
+        z = tf.concat([self.camera.z_mean, self.left_eye.z_mean, self.right_eye.z_mean], 1)
 
         z = tf.clip_by_value(z, -5, 5)
 
@@ -88,7 +88,7 @@ class Machine(object):
         # mask = np.zeros(1)
         td_map = {self.ppo.act_model.S:state}
 
-        camera_x = np.array([obs[0][random.randint(0, 1)]])
+        camera_x = np.array([obs[0][0]])
         eye_x1 = np.array([obs[0][2]])
         eye_x2 = np.array([obs[0][3]])
         td_map[self.camera.inputs] = camera_x
