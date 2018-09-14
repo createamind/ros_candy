@@ -46,7 +46,8 @@ class Machine(object):
         self.variable_restore_parts = [self.camera, self.left_eye, self.right_eye]
         self.variable_save_optimize_parts = [self.camera, self.left_eye, self.right_eye, self.ppo]
 
-        total_loss = self.camera.loss + self.left_eye.loss + self.right_eye.loss + 0 * self.ppo.loss
+        self.vae_loss = self.camera.loss + self.left_eye.loss + self.right_eye.loss
+        total_loss = self.vae_loss + 0 * self.ppo.loss
 
         tf.summary.scalar('total_loss', tf.reduce_mean(total_loss))
 
@@ -99,8 +100,8 @@ class Machine(object):
         td_map[self.right_eye.is_training] = False
 
         td_map[self.test_speed] = np.array([[obs[1]]]) # speed
-        vae_loss = self.camera.loss + self.left_eye.loss + self.right_eye.loss
-        return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, vae_loss], td_map)
+        
+        return self.sess.run([self.ppo.act_model.a0, self.ppo.act_model.v0, self.ppo.act_model.snew, self.ppo.act_model.neglogp0, self.vae_loss], td_map)
 
     def value(self, obs, state, action):
         raise NotImplementedError
