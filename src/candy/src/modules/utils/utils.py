@@ -296,11 +296,11 @@ def q_explained_variance(qpred, q):
 
 # kaiming initializer
 def kaiming_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tf.contrib.layers.variance_scaling_initializer(factor=2, uniform=uniform, seed=seed, dtype=dtype)
+    return tf.contrib.layers.variance_scaling_initializer(factor=2, mode='FAN_IN', uniform=uniform, seed=seed, dtype=dtype)
 
 # xavier initializer
 def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tf.contrib.layers.variance_scaling_initializer(factor=1, uniform=uniform, seed=seed, dtype=dtype)
+    return tf.contrib.layers.variance_scaling_initializer(factor=1, mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
 
 # relu and batch normalization
 def bn_relu(layer, training): 
@@ -308,10 +308,10 @@ def bn_relu(layer, training):
 
 # mean square error
 def mean_square_error(labels, predictions, scope=None):
-    return tf.losses.mean_squared_error(labels, predictions)
+    return tf.losses.mean_squared_error(labels, predictions, scope=scope)
 
 def kl_loss(mean, logstd):
-    return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logstd - mean**2 - tf.exp(2 * logstd), axis=1))
+    return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logstd - mean**2 - tf.exp(2 * logstd), axis=1), axis=0)
 
 def default_path(filename):
     return os.path.join(sys.path[0], filename)
@@ -327,21 +327,15 @@ def load_args(filename='args.yaml'):
 
 # save args to args.yaml
 def save_args(args, args_to_update=None, filename='args.yaml'):
-    if args_to_update:
-        with open(default_path(filename), 'w') as f:
-            try:
-                args_to_update.update(args)
-                yaml.dump(args_to_update, f)
-            except yaml.YAMLError as exc:
-                print(exc)
-    else:
-        with open(default_path(filename), 'rw') as f:
-            try:
-                args_to_update = yaml.load(f)
-                args_to_update.update(args)
-                yaml.dump(args_to_update, f)
-            except yaml.YAMLError as exc:
-                print(exc)
+    if args_to_update is None:
+        args_to_update = load_args(filename)
+
+    with open(default_path(filename), 'w') as f:
+        try:
+            args_to_update.update(args)
+            yaml.dump(args_to_update, f)
+        except yaml.YAMLError as exc:
+            print(exc)
         
 def timeit(func, name=None):
 	start = time.time()
