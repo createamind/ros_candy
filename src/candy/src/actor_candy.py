@@ -23,35 +23,35 @@ class ARGS(object):
 
 from machine import Machine
 
-from modules.utils.utils import timeit
+from modules.utils.debug_tools import timeit
 
 if __name__ == '__main__':
     rospy.init_node('actor_candy')
-    machine = Machine()
+    machine = timeit(Machine, 'Machine Initialization')
 
     def step(data):
-        obs, state = timeit(lambda: msgpack.unpackb(data.a, raw=False, encoding='utf-8'), 'step/unpackb')
+        obs, state = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
         # print(np.array(obs).shape)
         # print(np.array(state).shape)
-        a, b, c, d, e = timeit(lambda: machine.step(obs, state), 'machine.step')
-        outmsg = timeit(lambda: msgpack.packb([a,b,c,d,e], use_bin_type=True), 'step/pack')
+        a, b, c, d, e = machine.step(obs, state)
+        outmsg = msgpack.packb([a,b,c,d,e], use_bin_type=True)
         return outmsg
 
     def value(data):
-        obs, state, action = timeit(lambda: msgpack.unpackb(data.a, raw=False, encoding='utf-8'), 'value/unpackb')
+        obs, state, action = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
         # print(np.array(obs).shape)
         # print(np.array(state).shape)
         # print(np.array(action).shape)
-        a,b,c,d,e = timeit(lambda: machine.value(obs, state, action), 'machine.value')
-        outmsg = timeit(lambda: msgpack.packb([a,b,c,d,e], use_bin_type=True), 'value/pack')
+        a,b,c,d,e = machine.value(obs, state, action)
+        outmsg = msgpack.packb([a,b,c,d,e], use_bin_type=True)
         return outmsg
 
     def update_weights(data):
-        param = timeit(lambda: msgpack.unpackb(data.a, raw=False, encoding='utf-8'), 'update_weights/unpack')
-        timeit(lambda: machine.update_weights(param), 'machine.update_weights')
+        param = msgpack.unpackb(data.a, raw=False, encoding='utf-8')
+        machine.update_weights(param)
         return ''
  
-    _ = timeit(lambda: rospy.Service('model_step', Step, step), 'rospy.Service(model_step)')
-    _ = timeit(lambda: rospy.Service('model_value', Value, value), 'rospy.Service(model_value)')
-    _ = timeit(lambda: rospy.Service('update_weights', UpdateWeights, update_weights), 'rospy.Service(update_weights)')
+    _ = rospy.Service('model_step', Step, step)
+    _ = rospy.Service('model_value', Value, value)
+    _ = rospy.Service('update_weights', UpdateWeights, update_weights)
     rospy.spin()

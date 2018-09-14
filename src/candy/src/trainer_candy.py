@@ -26,7 +26,7 @@ if not (sys.version_info[0] < 3):
 
 from machine import Machine
 import time
-from modules.utils.utils import timeit
+from modules.utils.debug_tools import timeit
 
 TRAIN_EPOCH = 50
 BATCH_SIZE = load_args()['batch_size']
@@ -37,14 +37,14 @@ buffer = deque(maxlen=MAX_BUFFER_SIZE)
 if __name__ == '__main__':
 	rospy.init_node('trainer_candy')
 
-	machine = timeit(Machine)
+	machine = timeit(Machine, 'Machine Initialization')
 
 	def calculate_difficulty(reward, vaerecon):
 		# return vaerecon * vaerecon * abs(reward)
 		return vaerecon
 
 	def memory_training(msg):
-		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = timeit(lambda: msgpack.unpackb(msg.data, raw=False, encoding='utf-8'), 'unpack(data)')
+		obs, actions, values, neglogpacs, rewards, vaerecons, states, std_actions, manual = msgpack.unpackb(msg.data, raw=False, encoding='utf-8')
 		
 
 		global buffer
@@ -67,22 +67,22 @@ if __name__ == '__main__':
 
 		machine.save()
 
-		timeit(lambda: rospy.wait_for_service('update_weights'), 'rospy.wait_for_service')
+		rospy.wait_for_service('update_weights')
 
 		try:
-			update_weights = timeit(lambda: rospy.ServiceProxy('update_weights', UpdateWeights), 'rospy.ServiceProxy')
+			update_weights = rospy.ServiceProxy('update_weights', UpdateWeights)
 			
-			param = timeit(lambda: machine.sess.run(machine.params), 'machine.params')
+			param = machine.sess.run(machine.params)
 			# for each in tqdm(machine.params):
 			# 	param.append(np.array(each.eval(session=machine.sess)))
 			# param = np.array(param)
-			outmsg = timeit(lambda: msgpack.packb(param, use_bin_type=True), 'msgpack.packb(param)')
+			outmsg = msgpack.packb(param, use_bin_type=True)
 			
-			timeit(lambda: update_weights(outmsg), 'update_weights')
+			update_weights(outmsg)
 
 		except rospy.ServiceException as e:
 			print("Service call failed: %s" % e)
 
-	sub = timeit(lambda: rospy.Subscriber('/train_data', String, memory_training, queue_size=1, buff_size=2**24), 'rospy.Subscriber')
+	sub = rospy.Subscriber('/train_data', String, memory_training, queue_size=1, buff_size=2**24)
 
 	rospy.spin()
