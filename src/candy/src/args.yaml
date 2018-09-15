@@ -25,3 +25,4 @@ imitation_coefficient: 0.9
 batch_size: 64
 image_size: 320
 dataset_size: 10000
+z_size: 64
