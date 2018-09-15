@@ -59,7 +59,7 @@ class BetaVAE(Module):
             x = tf.reshape(x, [-1, 2 * self.z_size])
             """
             """ Version with dense layers """
-            x = tf.reshape(-1, [-1, 5 * 5 * 512])
+            x = tf.reshape(x, [-1, 5 * 5 * 512])
             x = self.dense_bn_relu(x, 512)
             x = self.dense(x, 512)
             
