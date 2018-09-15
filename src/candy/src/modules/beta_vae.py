@@ -41,15 +41,15 @@ class BetaVAE(Module):
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):
-            x = self.conv_bn_relu(x, 16, 4, 2)                  # x = 160, 160, 16
-            x = self.conv_bn_relu(x, 32, 4, 2)                  # x = 80, 80, 32
-            x = self.conv_bn_relu(x, 64, 4, 2)                  # x = 40, 40, 64
-            x = self.conv_bn_relu(x, 128, 4, 2)                 # x = 20, 20, 128
-            x = self.conv_bn_relu(x, 256, 4, 2)                 # x = 10, 10, 256
-            x = self.conv_bn_relu(x, 512, 4, 2)                 # x = 5, 5, 512
-            self.last_conv_feature_map = x
+            x = self._conv_bn_relu(x, 16, 4, 2)                  # x = 160, 160, 16
+            x = self._conv_bn_relu(x, 32, 4, 2)                  # x = 80, 80, 32
+            x = self._conv_bn_relu(x, 64, 4, 2)                  # x = 40, 40, 64
+            x = self._conv_bn_relu(x, 128, 4, 2)                 # x = 20, 20, 128
+            x = self._conv_bn_relu(x, 256, 4, 2)                 # x = 10, 10, 256
+            x = self._conv_bn_relu(x, 512, 4, 2)                 # x = 5, 5, 512
+            self.dim_feature_map = x
             """ Version without dense layer """
-            x = self.conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
+            x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
             # x = 1, 1, 2 * z_size
 
             x = tf.reshape(x, [-1, 2 * self.z_size])
@@ -82,16 +82,17 @@ class BetaVAE(Module):
             """ Version without dense layer """
             x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
 
-            x = self.convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
+            x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
 
-            x = self.convtrans_bn_relu(x, 256, 4, 2)                    # x = 10, 10, 256
-            x = self.convtrans_bn_relu(x, 128, 4, 2)                    # x = 20, 20, 128
-            x = self.convtrans_bn_relu(x, 64, 4, 2)                     # x = 40, 40, 64
-            x = self.convtrans_bn_relu(x, 32, 4, 2)                     # x = 80, 80, 32
-            x = self.convtrans_bn_relu(x, 16, 4, 2)                     # x = 160, 160, 16
-            x = self.convtrans(x, 3, 4, 2, kernel_initializer=utils.xavier_initializer())
+            x = self._convtrans_bn_relu(x, 256, 4, 2)                    # x = 10, 10, 256
+            x = self._convtrans_bn_relu(x, 128, 4, 2)                    # x = 20, 20, 128
+            x = self._convtrans_bn_relu(x, 64, 4, 2)                     # x = 40, 40, 64
+            x = self._convtrans_bn_relu(x, 32, 4, 2)                     # x = 80, 80, 32
+            x = self._convtrans_bn_relu(x, 16, 4, 2)                     # x = 160, 160, 16
+            x = self._convtrans(x, 3, 4, 2, kernel_initializer=utils.xavier_initializer())
             # x = 320, 320, 3
-
+            x = tf.tanh(x)
+            
             x_mu = x
             
         if not self.reuse:
@@ -109,7 +110,7 @@ class BetaVAE(Module):
                 MAX_BETA = 1
                 beta = tf.get_variable('beta', shape=(), initializer=tf.constant_initializer([0.01]), trainable=False, dtype=tf.float32)
                 new_beta = tf.assign(beta, tf.minimum(1.01 * beta, MAX_BETA))
-                beta_KL = beta * KL_loss / (160**2)
+                beta_KL = beta * KL_loss
 
             with tf.variable_scope('reconstruction_error', reuse=self.reuse):
                 reconstruction_loss = utils.mean_square_error(labels, predictions)
@@ -117,7 +118,7 @@ class BetaVAE(Module):
             l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
             
             with tf.control_dependencies([new_beta]):
-                loss = reconstruction_loss + beta_KL# + l2_loss
+                loss = reconstruction_loss + beta_KL + l2_loss
 
             tf.summary.scalar('reconstruction_error', reconstruction_loss)
             tf.summary.scalar('beta', beta)
