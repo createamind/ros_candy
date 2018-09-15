@@ -190,7 +190,7 @@ class PPO(object):
         opt_op = self.opt.apply_gradients(gvs)
         return opt_op
 
-    def variable_restore(self, sess):
+    def restore(self, sess):
         if self._saver is not None:
             key = self._name + '_path_prefix'
             no_such_file = 'Missing_file'

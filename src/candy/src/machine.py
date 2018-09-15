@@ -37,7 +37,7 @@ class Machine(object):
         self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
 
-        z = tf.concat([self.camera.z_mean, self.left_eye.z_mean, self.right_eye.z_mean], 1)
+        z = tf.concat([self.camera.z_mu, self.left_eye.z_mu, self.right_eye.z_mu], 1)
 
         z = tf.clip_by_value(z, -5, 5)
 
@@ -74,7 +74,7 @@ class Machine(object):
         print('Restoring!')
 
         for part in self.variable_restore_parts:
-            part.variable_restore(self.sess)
+            part.restore(self.sess)
 
         print('Get_Params!')
         self.params = []
@@ -120,7 +120,7 @@ class Machine(object):
         # for ind, _ in tqdm(enumerate(self.params)):
         #     self.params[ind].load(mat[ind], self.sess)
         for part in self.variable_restore_parts:
-            part.variable_restore(self.sess)
+            part.restore(self.sess)
 
         print('Weights Updated!')
 

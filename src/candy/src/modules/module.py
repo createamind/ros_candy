@@ -1,55 +1,45 @@
 import tensorflow as tf
+import modules.utils.utils as utils
 import os
 import sys
-import yaml
-from modules.utils.utils import save_args
 
 class Module(object):
-    def __init__(self, args, name, is_training=False, reuse=False):
+    def __init__(self, name, args, reuse=False):
         self._args = args
         self._name = name
-        self._reuse = reuse
-        with tf.variable_scope(self._name, reuse=self._reuse):
-            self.outputs = self._build_net(is_training)
+        self.reuse = reuse
 
-        collection = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self._name)
-        if len(collection) > 0:
-            self._saver = tf.train.Saver(collection)
-        else:
-            self._saver = None
-
-    def _build_net(self, is_training):
-        raise NotImplementedError
-
-class ModalOps(Module):
-    def __init__(self, args, name, is_training=False, reuse=False):
-        super(ModalOps, self).__init__(args, name, is_training, reuse)
-
-    def optimize(self, loss):
+        # params for optimizer
         learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
         beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
         beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
-        grad_clip = self._args[self._name]['grad_clip'] if 'grad_clip' in self._args[self._name] else 10
-        
-        with tf.variable_scope(self._name, reuse=self._reuse):
-            with tf.variable_scope('optimizer', reuse=self._reuse):
-                self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 
-                update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-                with tf.control_dependencies(update_ops):
-                    grad_var_pairs = self._optimizer.compute_gradients(loss, var_list=tf.trainable_variables(self._name))
-                    if not self._reuse:
-                        tf.summary.histogram('gradient', grad_var_pairs[0][0])
-                    grad_var_pairs = [(tf.clip_by_norm(grad, grad_clip), var) for grad, var in grad_var_pairs]
+        with tf.variable_scope(self._name, reuse=self.reuse):
+            self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
 
-                    opt_op = self._optimizer.apply_gradients(grad_var_pairs)
+            self._build_graph()
 
-        return opt_op
+            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 
-    def variable_restore(self, sess):
-        if self._saver is not None:
+            self.opt_op = self._optimize(self.loss)
+
+            collection = tf.global_variables(self._name)
+            if len(collection) > 0:
+                self._saver = tf.train.Saver(collection)
+            else:
+                self._saver = None
+    
+    def _build_graph(self):
+        raise NotImplementedError
+
+    def _optimize(self, loss):
+        raise NotImplementedError
+
+    def restore(self, sess):
+        if self._saver:
             key = self._name + '_path_prefix'
             no_such_file = 'Missing_file'
+
             path_prefix = self._args[key] if key in self._args else no_such_file
             if path_prefix != no_such_file:
                 try:
@@ -57,11 +47,43 @@ class ModalOps(Module):
                     print("Params for {} are restored".format(self._name))
                 except:
                     del self._args[key]
-                return
     
     def save(self, sess):
         if self._saver:
             path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/trial/', str(self._name)))
             key = self._name + '_path_prefix'
             self._args[key] = path_prefix
-            save_args({key: path_prefix}, self._args)
+            utils.save_args({key: path_prefix}, self._args)
+
+    def dense(self, x, units, kernel_initializer=utils.xavier_initializer()):
+        return tf.layers.dense(x, 512, kernel_initializer=kernel_initializer, 
+                               kernel_regularizer=self.l2_regularizer)
+
+    def dense_bn_relu(self, x, units, kernel_initializer=utils.kaiming_initializer()):
+        x = self.dense(x, units, kernel_initializer=kernel_initializer)
+        x = utils.bn_relu(x, self.is_training)
+
+        return x
+
+    def conv(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
+
+        return tf.layers.conv2d(x, filters, filter_size, 
+                                strides=strides, padding=padding, 
+                                kernel_initializer=kernel_initializer, 
+                                kernel_regularizer=self.l2_regularizer)
+
+    def conv_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()):
+        x = self.conv(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
+        x = utils.bn_relu(x, self.is_training)
+
+        return x
+    
+    def conv_transpose(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
+        return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding=padding, 
+                                            kernel_initializer=kernel_initializer, kernel_regularizer=self.l2_regularizer)
+    
+    def convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()):
+        x = self.conv_transpose(x, filters, filter_size, strides, padding=padding)
+        x = utils.bn_relu(x, self.is_training)
+
+        return x
