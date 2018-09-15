@@ -8,7 +8,7 @@ from collections import deque
 import gym
 from gym.spaces import Box, Discrete, Tuple
 # from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm
-from modules.utils.distributions import make_pdtype
+from modules.utils.distributions_1 import make_pdtype
 from modules.utils.utils import save_args
 import sys
 from tensorflow.contrib import rnn
