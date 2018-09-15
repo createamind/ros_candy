@@ -56,7 +56,7 @@ class Module(object):
             utils.save_args({key: path_prefix}, self._args)
 
     def dense(self, x, units, kernel_initializer=utils.xavier_initializer()):
-        return tf.layers.dense(x, 512, kernel_initializer=kernel_initializer, 
+        return tf.layers.dense(x, units, kernel_initializer=kernel_initializer, 
                                kernel_regularizer=self.l2_regularizer)
 
     def dense_bn_relu(self, x, units, kernel_initializer=utils.kaiming_initializer()):
@@ -66,7 +66,6 @@ class Module(object):
         return x
 
     def conv(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
-
         return tf.layers.conv2d(x, filters, filter_size, 
                                 strides=strides, padding=padding, 
                                 kernel_initializer=kernel_initializer, 
@@ -80,7 +79,7 @@ class Module(object):
     
     def conv_transpose(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
         return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding=padding, 
-                                            kernel_initializer=kernel_initializer, kernel_regularizer=self.l2_regularizer)
+                                          kernel_initializer=kernel_initializer, kernel_regularizer=self.l2_regularizer)
     
     def convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()):
         x = self.conv_transpose(x, filters, filter_size, strides, padding=padding)

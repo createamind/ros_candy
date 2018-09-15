@@ -45,12 +45,12 @@ class BetaVAE(Module):
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):
-            x = self.conv_bn_relu(x, 16, 4, 2)           # x = 160, 160, 16
-            x = self.conv_bn_relu(x, 32, 4, 2)           # x = 80, 80, 32
-            x = self.conv_bn_relu(x, 64, 4, 2)           # x = 40, 40, 64
-            x = self.conv_bn_relu(x, 128, 4, 2)          # x = 20, 20, 128
-            x = self.conv_bn_relu(x, 256, 4, 2)          # x = 10, 10, 256
-            x = self.conv_bn_relu(x, 512, 4, 2)          # x = 5, 5, 512
+            x = self.conv_bn_relu(x, 16, 4, 2)                  # x = 160, 160, 16
+            x = self.conv_bn_relu(x, 32, 4, 2)                  # x = 80, 80, 32
+            x = self.conv_bn_relu(x, 64, 4, 2)                  # x = 40, 40, 64
+            x = self.conv_bn_relu(x, 128, 4, 2)                 # x = 20, 20, 128
+            x = self.conv_bn_relu(x, 256, 4, 2)                 # x = 10, 10, 256
+            x = self.conv_bn_relu(x, 512, 4, 2)                 # x = 5, 5, 512
 
             """ Version without dense layer
             x = self.conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
@@ -61,7 +61,7 @@ class BetaVAE(Module):
             """ Version with dense layers """
             x = tf.reshape(x, [-1, 5 * 5 * 512])
             x = self.dense_bn_relu(x, 512)
-            x = self.dense(x, 512)
+            x = self.dense(x, 2 * self.z_size)
             
             mu, logsigma = tf.split(x, 2, -1)
 
