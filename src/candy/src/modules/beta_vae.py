@@ -7,16 +7,16 @@ import modules.utils.utils as utils
 from modules.module import Module
 
 class BetaVAE(Module):
-    def __init__(self, name, args, reuse=False, z_size=64):
-        self.z_size = z_size
+    def __init__(self, name, args, reuse=False):
+        self.z_size = args['z_size']
         self.image_size = args['image_size']
         super(BetaVAE, self).__init__(name, args, reuse)
 
         self.epsilon = 1e-8        
         
-        with tf.variable_scope(self._name, reuse=True):
+        with tf.variable_scope(self._name, reuse=True) as scope:
             # add image summaries at training time
-            with tf.variable_scope('image', reuse=self.reuse):
+            with tf.name_scope('image'):
                 # record an original image
                 timage = tf.cast((tf.clip_by_value(self.inputs, -1, 1) + 1) * 127, tf.uint8)
                 tf.summary.image('original_image', timage[:1])
@@ -51,7 +51,7 @@ class BetaVAE(Module):
             x = self.conv_bn_relu(x, 128, 4, 2)                 # x = 20, 20, 128
             x = self.conv_bn_relu(x, 256, 4, 2)                 # x = 10, 10, 256
             x = self.conv_bn_relu(x, 512, 4, 2)                 # x = 5, 5, 512
-
+            self.last_conv_feature_map = x
             """ Version without dense layer
             x = self.conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
             # x = 1, 1, 2 * z_size
