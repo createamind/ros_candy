@@ -92,7 +92,7 @@ class BetaVAE(Module):
             x = self._convtrans(x, 3, 4, 2, kernel_initializer=utils.xavier_initializer())
             # x = 320, 320, 3
             x = tf.tanh(x)
-            
+
             x_mu = x
             
         if not self.reuse:
@@ -107,15 +107,16 @@ class BetaVAE(Module):
         with tf.variable_scope('loss', reuse=self.reuse):
             with tf.variable_scope('kl_loss', reuse=self.reuse):
                 KL_loss = utils.kl_loss(mu, logsigma)
-                MAX_BETA = 1
-                beta = tf.get_variable('beta', shape=(), initializer=tf.constant_initializer([0.01]), trainable=False, dtype=tf.float32)
-                new_beta = tf.assign(beta, tf.minimum(1.01 * beta, MAX_BETA))
+                MAX_BETA = self._args[self._name]['beta']
+                beta = tf.get_variable('beta', shape=(), initializer=tf.constant_initializer([1e-6]), trainable=False, dtype=tf.float32)
+                new_beta = tf.assign(beta, tf.minimum(1.0005 * beta, MAX_BETA))
                 beta_KL = beta * KL_loss
 
             with tf.variable_scope('reconstruction_error', reuse=self.reuse):
                 reconstruction_loss = utils.mean_square_error(labels, predictions)
             
-            l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
+            with tf.variable_scope('l2_regulization', reuse=self.reuse):
+                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
             
             with tf.control_dependencies([new_beta]):
                 loss = reconstruction_loss + beta_KL + l2_loss

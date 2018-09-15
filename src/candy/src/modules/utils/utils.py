@@ -48,12 +48,12 @@ def save_args(args, args_to_update=None, filename='args.yaml'):
         
 def logsumexp(value, axis=None, keepdims=False):
     if axis is not None:
-        max_value = tf.reduce_max(value, axis, keepdims=True)
+        max_value = tf.reduce_max(value, axis=axis, keepdims=True)
         value0 = value - max_value    # for numerical stability
         if keepdims is False:
             max_value = tf.squeeze(max_value)
         return max_value + tf.log(tf.reduce_sum(tf.exp(value0),
-                                        axis=axis, keepdims=keepdims))
+                                                axis=axis, keepdims=keepdims))
     else:
         max_value = tf.reduce_max(value)
         return max_value + tf.log(tf.reduce_sum(tf.exp(value - max_value)))

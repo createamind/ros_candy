@@ -10,9 +10,9 @@ def log_normal(sample, mu, logsigma):
     Returns:
         [type] -- [description]
     """
-    log2pi = tf.constant([np.log(2 * np.pi)])    # log(2pi)
+    log2pi = tf.constant([np.log(2 * np.pi)])           # log(2pi)
     inverse_sigma = tf.exp(-logsigma)                   # 1/sigma
     tmp = (sample - mu) * inverse_sigma                 # (x - mu)/sigma
 
-    return -0.5 * (tmp**2 + 2 * logsigma + log2pi) # log(N(mu, sigma))
+    return -0.5 * (tmp**2 + 2 * logsigma + log2pi)      # log(N(mu, sigma))
 
