@@ -1,13 +1,22 @@
 ---
 camera:
     learning_rate: 0.00001
-    weight_decay: 0.1
+    weight_decay: 0.01
+    alpha: 1
+    beta: 6
+    gamma: 1
 left_eye:
     learning_rate: 0.00001
-    weight_decay: 0.1
+    weight_decay: 0.01
+    alpha: 1
+    beta: 6
+    gamma: 1
 right_eye:
     learning_rate: 0.00001
-    weight_decay: 0.1
+    weight_decay: 0.01
+    alpha: 1
+    beta: 6
+    gamma: 1
 ppo:
     learning_rate: 0.0005
     weight_decay: 0.001
@@ -15,3 +24,4 @@ ppo:
 imitation_coefficient: 0.9
 batch_size: 64
 image_size: 320
+dataset_size: 10000
