@@ -77,12 +77,12 @@ class Module(object):
 
         return x
     
-    def conv_transpose(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
+    def convtrans(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
         return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding=padding, 
                                           kernel_initializer=kernel_initializer, kernel_regularizer=self.l2_regularizer)
     
     def convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()):
-        x = self.conv_transpose(x, filters, filter_size, strides, padding=padding)
+        x = self.convtrans(x, filters, filter_size, strides, padding=padding)
         x = utils.bn_relu(x, self.is_training)
 
         return x

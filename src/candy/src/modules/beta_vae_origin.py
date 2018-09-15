@@ -48,11 +48,15 @@ class BetaVAE(Module):
             x = self.conv_bn_relu(x, 256, 4, 2)                 # x = 10, 10, 256
             x = self.conv_bn_relu(x, 512, 4, 2)                 # x = 5, 5, 512
             self.last_conv_feature_map = x
-            """ Version without dense layer """
+            """ Version without dense layer
             x = self.conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
             # x = 1, 1, 2 * z_size
 
             x = tf.reshape(x, [-1, 2 * self.z_size])
+            """
+            """ Version with dense layers """
+            x = tf.reshape(x, [-1, 5 * 5 * 512])
+            x = self.dense(x, 2 * self.z_size)
             
             mu, logsigma = tf.split(x, 2, -1)
 
@@ -79,10 +83,14 @@ class BetaVAE(Module):
 
         # decoder net
         with tf.variable_scope('decoder', reuse=reuse):
-            """ Version without dense layer """
+            """ Version without dense layer
             x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
 
             x = self.convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
+            """
+            """ Version with dense layers """
+            x = self.dense_bn_relu(x, 5 * 5 * 512)
+            x = tf.reshape(x, [-1, 5, 5, 512])                          # x = 5, 5, 512
 
             x = self.convtrans_bn_relu(x, 256, 4, 2)                    # x = 10, 10, 256
             x = self.convtrans_bn_relu(x, 128, 4, 2)                    # x = 20, 20, 128
@@ -98,7 +106,7 @@ class BetaVAE(Module):
             with tf.variable_scope('decoder', reuse=True):
                 # record some weights
                 w = tf.get_variable('conv2d_transpose_5/kernel')
-                tf.summary.histogram('convtrans5_weights', w)
+                tf.summary.histogram('conv_trans5_weights', w)
 
         return x_mu
 
@@ -126,7 +134,7 @@ class BetaVAE(Module):
             tf.summary.scalar('l2_loss', l2_loss)
             tf.summary.scalar('total_loss', loss)
 
-        return loss
+            return loss
 
     def _optimize(self, loss):
         # grad_clip = self._args[self._name]['grad_clip'] if 'grad_clip' in self._args[self._name] else 10

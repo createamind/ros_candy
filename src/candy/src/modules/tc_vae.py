@@ -19,12 +19,9 @@ class TCVAE(BetaVAE):
                 logpz = log_normal(self.sample_z, mu, logsigma)
                 logqz_condx = log_normal(self.sample_z, mu, logsigma)
 
-                print(tf.expand_dims(self.sample_z, axis=1))
-                print(tf.expand_dims(logsigma, 0).shape.as_list())
                 logqz_condx_expanded = log_normal(tf.expand_dims(self.sample_z, axis=1), 
                                                   tf.expand_dims(mu, axis=0), 
                                                   tf.expand_dims(logsigma, axis=0))
-                print(logqz_condx_expanded.shape.as_list())
 
                 constant = log(self.batch_size * self.dataset_size)
                 logqz_marginal_product = tf.reduce_sum(utils.logsumexp(logqz_condx_expanded, axis=1, keepdims=False) \

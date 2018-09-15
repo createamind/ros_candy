@@ -310,8 +310,8 @@ def bn_relu(layer, training):
 def mean_square_error(labels, predictions, scope=None):
     return tf.losses.mean_squared_error(labels, predictions, scope=scope)
 
-def kl_loss(mean, logstd):
-    return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logstd - mean**2 - tf.exp(2 * logstd), axis=1), axis=0)
+def kl_loss(mu, logsigma):
+    return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logsigma - mu**2 - tf.exp(2 * logsigma), axis=1), axis=0)
 
 def default_path(filename):
     return os.path.join(sys.path[0], filename)
