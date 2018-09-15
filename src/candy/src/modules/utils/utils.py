@@ -337,10 +337,14 @@ def save_args(args, args_to_update=None, filename='args.yaml'):
         except yaml.YAMLError as exc:
             print(exc)
         
-def timeit(func, name=None):
-	start = time.time()
-	result = func()
-	end = time.time()
-	print('Time for {}:'.format(name if name else func.__name__), end - start)
-
-	return result
+def logsumexp(value, axis=None, keepdims=False):
+    if axis is not None:
+        max_value = tf.reduce_max(value, axis, keepdims=True)
+        value0 = value - max_value    # for numerical stability
+        if keepdims is False:
+            max_value = tf.squeeze(max_value)
+        return max_value + tf.log(tf.reduce_sum(tf.exp(value0),
+                                        axis=axis, keepdims=keepdims))
+    else:
+        max_value = tf.reduce_max(value)
+        return max_value + tf.log(tf.reduce_sum(tf.exp(value - max_value)))
