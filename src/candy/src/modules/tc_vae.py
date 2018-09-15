@@ -39,7 +39,7 @@ class TCVAE(BetaVAE):
             
             l2_loss = t f.losses.get_regularization_loss(self._name, name='l2_loss')
             
-            loss = reconstruction_loss + KL_loss# + l2_loss
+            loss = reconstruction_loss + KL_loss + l2_loss
 
             tf.summary.scalar('Reconstruction_error', reconstruction_loss)
             tf.summary.scalar('MI_loss', MI_loss)
