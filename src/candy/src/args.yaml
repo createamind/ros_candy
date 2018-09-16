@@ -27,4 +27,4 @@ image_size: 320
 dataset_size: 10000
 z_size: 64
 
-model_name: 0.0001-0.95-0.01-l1loss
+model_name: 0.0001-0.95-0.01-l2loss-normalized_image-beta1

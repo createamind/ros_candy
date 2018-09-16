@@ -24,19 +24,26 @@ class BetaVAE(Module):
             self.inputs = tf.placeholder(tf.float32, (None, self.image_size, self.image_size, 3), name='inputs')
             self.is_training = tf.placeholder(tf.bool, (None), name='is_training')
                 
-        self.z_mu, self.z_logsigma = self._encode(self.inputs)
+        self.normalized_images = self._preprocess_images(self.inputs)
+        self.z_mu, self.z_logsigma = self._encode(self.normalized_images)
         self.sample_z = self._sample_norm(self.z_mu, self.z_logsigma, 'sample_z')
         self.x_mu = self._decode(self.sample_z, reuse=self.reuse)
-        self.loss = self._loss(self.z_mu, self.z_logsigma, self.x_mu, self.inputs)
+        self.loss = self._loss(self.z_mu, self.z_logsigma, self.normalized_images, self.x_mu)
 
-        # add image summaries at training time
+        # add image to tf.summary
         with tf.name_scope('image'):
             # record an original image
-            timage = tf.cast((tf.clip_by_value(self.inputs, -1, 1) + 1) * 127, tf.uint8)
-            tf.summary.image('original_image_', timage[:1])
+            tf.summary.image('original_image_', self.inputs[:1])
             # record a generated image
-            timage = tf.cast((tf.clip_by_value(self.x_mu, -1, 1) + 1) * 127, tf.uint8)
-            tf.summary.image('generated_image_', timage[:1])
+            timage = tf.cast((tf.clip_by_value(self.x_mu * self.std + self.mean, 0, 255)), tf.uint8)
+            tf.summary.image('generated_image_', timage)
+
+    def _preprocess_images(self, images):
+        with tf.name_scope('preprocessing'):
+            self.mean, var = tf.nn.moments(images, [0, 1, 2])
+            self.std = tf.sqrt(var)
+            normalized_images = (images - self.mean) / self.std
+        return normalized_images
 
     def _encode(self, inputs):                                 
         x = inputs
@@ -103,7 +110,7 @@ class BetaVAE(Module):
 
         return x_mu
 
-    def _loss(self, mu, logsigma, predictions, labels):
+    def _loss(self, mu, logsigma, labels, predictions):
         with tf.variable_scope('loss', reuse=self.reuse):
             with tf.variable_scope('kl_loss', reuse=self.reuse):
                 KL_loss = utils.kl_loss(mu, logsigma)
@@ -113,9 +120,9 @@ class BetaVAE(Module):
                 beta_KL = beta * KL_loss
 
             with tf.variable_scope('reconstruction_loss', reuse=self.reuse):
-                reconstruction_loss = tf.losses.absolute_difference(labels, predictions)
+                reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
             
-            with tf.variable_scope('l2_regularization', reuse=self.reuse):
+            with tf.variable_scope('regularization', reuse=self.reuse):
                 l2_loss = tf.losses.get_regularization_loss(self._name)
             
             with tf.variable_scope('total_loss', reuse=self.reuse):
