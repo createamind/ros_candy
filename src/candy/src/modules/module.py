@@ -23,11 +23,17 @@ class Module(object):
             else:
                 self._saver = None
     
-    def restore(self, sess):
+    def restore(self, sess, filename=None):
+        """ To restore the most recent model, simply leave filename None
+        To restore a specific version of model, set filename to the model stored in saved_models
+        """
         if self._saver:
             NO_SUCH_FILE = 'Missing_file'
-            models, key = self._models_key() 
-            path_prefix = models[key] if key in models else NO_SUCH_FILE
+            if filename:
+                path_prefix = os.path.join(sys.path[0], 'saved_models/' + filename, self._name)
+            else:
+                models, key = self._models_key() 
+                path_prefix = filename if filename is not None else (models[key] if key in models else NO_SUCH_FILE)
             if path_prefix != NO_SUCH_FILE:
                 try:
                     self._saver.restore(sess, path_prefix)

@@ -8,7 +8,6 @@ import os
 from modules.module import Module, ModalOps
 from modules.image_encoder import ImageEncoder
 from modules.image_decoder import ImageDecoder
-from modules.utils.utils import mean_square_error
 
 
 class MultiModal(ModalOps):
@@ -53,9 +52,9 @@ class MultiModal(ModalOps):
 
         with tf.variable_scope('loss', reuse=self._reuse):
             self.KL_loss = tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logsigma - self.mean**2 - sigma**2, axis=1))
-            self.camera_reconstruction_error = mean_square_error(self.camera_x, self.camera_reconstruction)
-            self.eye_reconstruction_error1 = mean_square_error(self.eye_x1, self.eye_reconstruction1)
-            self.eye_reconstruction_error2 = mean_square_error(self.eye_x2, self.eye_reconstruction2)
+            self.camera_reconstruction_error = tf.losses.mean_squared_error(self.camera_x, self.camera_reconstruction)
+            self.eye_reconstruction_error1 = tf.losses.mean_squared_error(self.eye_x1, self.eye_reconstruction1)
+            self.eye_reconstruction_error2 = tf.losses.mean_squared_error(self.eye_x2, self.eye_reconstruction2)
             l2_loss = tf.losses.get_regularization_loss()
 
             MAX_BETA = 1

@@ -44,7 +44,7 @@ class TCVAE(BetaVAE):
                 KL_loss = self.alpha * MI_loss + self.beta * TC_loss + self.gamma * Dimension_wise_KL
 
             with tf.variable_scope('reconstruction_error', reuse=self.reuse):
-                reconstruction_loss = utils.mean_square_error(labels, predictions)
+                reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
             
             with tf.variable_scope('l2_regularization', reuse=self.reuse):
                 l2_loss = t f.losses.get_regularization_loss(self._name, name='l2_loss')

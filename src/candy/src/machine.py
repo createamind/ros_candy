@@ -16,7 +16,6 @@ from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
 from tqdm import tqdm
 import rospy
-from modules.utils.utils import mean_square_error
 from modules.utils.utils import default_path, load_args
 import random
 import sys

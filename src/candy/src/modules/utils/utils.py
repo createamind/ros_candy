@@ -15,10 +15,6 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
 def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
-# mean square error
-def mean_square_error(labels, predictions, scope=None):
-    return tf.losses.mean_squared_error(labels, predictions, scope=scope)
-
 def kl_loss(mu, logsigma):
     return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logsigma - mu**2 - tf.exp(2 * logsigma), axis=1), axis=0)
 
