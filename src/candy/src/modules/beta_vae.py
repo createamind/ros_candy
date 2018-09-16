@@ -7,6 +7,7 @@ import modules.utils.utils as utils
 from modules.module import Module
 
 class BetaVAE(Module):
+    """ Interface """
     def __init__(self, name, args, reuse=False):
         self.z_size = args['z_size']
         self.image_size = args['image_size']
@@ -17,6 +18,7 @@ class BetaVAE(Module):
             sample_z = np.random.normal(size=(num_images, self.z_size))
             return sess.run(self.x_mu, feed_dict={self.sample_z: sample_z})
 
+    """" Implementation """
     def _build_graph(self):
         with tf.variable_scope('placeholder', reuse=self.reuse):
             self.inputs = tf.placeholder(tf.float32, (None, self.image_size, self.image_size, 3), name='inputs')

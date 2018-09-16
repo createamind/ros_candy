@@ -9,6 +9,7 @@ Only compute the local mutual information
 The global one shouldn't be much different
 """
 class DIM(BetaVAE):
+    """ Interface """
     def __init__(self, name, args, reuse=False):
         super(DIM, self).__init__(name, args, reuse)
 
@@ -19,6 +20,7 @@ class DIM(BetaVAE):
 
                 local_MI = E_joint - E_prod
 
+    """ Implementation """
     def _score(self, z):
         T_joint = self._get_score(z)
         T_prod = self._get_score(z, shuffle=True)

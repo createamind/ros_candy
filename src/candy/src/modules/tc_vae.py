@@ -9,6 +9,7 @@ since 'constant' seems to contribute nothing to back-propagation
 """
 
 class TCVAE(BetaVAE):
+    """ Interface """
     def __init__(self, name, args, reuse=False):
         # self.dataset_size = args['dataset_size']
         self.alpha = args[self._name]['alpha']
@@ -17,6 +18,7 @@ class TCVAE(BetaVAE):
 
         super(TCVAE, self).__init__(self, name, args, reuse)
 
+    """ Implementation """
     def _loss(self, mu, logsigma, predictions, labels):
         with tf.variable_scope('loss', reuse=self.reuse):
             with tf.variable_scope('kl_loss', reuse=self.reuse):

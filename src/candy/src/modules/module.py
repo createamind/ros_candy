@@ -4,6 +4,7 @@ import os
 import sys
 
 class Module(object):
+    """ Interface """
     def __init__(self, name, args, reuse=False):
         self._args = args
         self._name = name
@@ -29,12 +30,6 @@ class Module(object):
             else:
                 self._saver = None
     
-    def _build_graph(self):
-        raise NotImplementedError
-
-    def _optimize(self, loss):
-        raise NotImplementedError
-
     def restore(self, sess):
         if self._saver:
             key = self._name + '_path_prefix'
@@ -54,6 +49,13 @@ class Module(object):
             key = self._name + '_path_prefix'
             self._args[key] = path_prefix
             utils.save_args({key: path_prefix}, self._args)
+
+    """ Implementation """
+    def _build_graph(self):
+        raise NotImplementedError
+
+    def _optimize(self, loss):
+        raise NotImplementedError
 
     def _dense(self, x, units, kernel_initializer=utils.xavier_initializer()):
         return tf.layers._dense(x, units, kernel_initializer=kernel_initializer, 
