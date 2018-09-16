@@ -133,17 +133,20 @@ class BetaVAE(Module):
         return loss
 
     def _optimize(self, loss):
-        # grad_clip = self._args[self._name]['grad_clip'] if 'grad_clip' in self._args[self._name] else 10
-        
+        # params for optimizer
+        init_learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
+        beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
+        beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
+
         with tf.variable_scope('optimizer', reuse=self.reuse):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            # grad_var_pairs = self._optimizer.compute_gradients(self.loss, var_list=tf.trainable_variables(self._name))
-            # if not self.reuse:
-            #     tf.summary.histogram('gradient', grad_var_pairs[0][0])
-            # grad_var_pairs = [(tf.clip_by_norm(grad, grad_clip), var) for grad, var in grad_var_pairs]
+            global_step = tf.get_variable('global_step', shape=(), initializer=0, trainable=False)
+            learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, 1000, 0.95, staircase=True)
+            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
+
+            tf.summary.scalar('learning_rate', learning_rate)
 
         with tf.control_dependencies(update_ops):
-            # opt_op = self._optimizer.apply_gradients(grad_var_pairs)
-            opt_op = self._optimizer.minimize(loss)
+            opt_op = self._optimizer.minimize(loss, global_step=global_step)
 
         return opt_op
