@@ -10,17 +10,10 @@ class Module(object):
         self._name = name
         self.reuse = reuse
 
-        # params for optimizer
-        learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
-        beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
-        beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
-
         with tf.variable_scope(self._name, reuse=self.reuse):
             self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self._name]['weight_decay'])
 
             self._build_graph()
-
-            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 
             self.opt_op = self._optimize(self.loss)
 
@@ -34,8 +27,8 @@ class Module(object):
         if self._saver:
             key = self._name + '_path_prefix'
             no_such_file = 'Missing_file'
-
-            path_prefix = self._args[key] if key in self._args else no_such_file
+            models = load_args('models.yaml')
+            path_prefix = models[key] if key in models else no_such_file
             if path_prefix != no_such_file:
                 try:
                     self._saver.restore(sess, path_prefix)
@@ -45,10 +38,10 @@ class Module(object):
     
     def save(self, sess):
         if self._saver:
-            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/trial/', str(self._name)))
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'models/trial/0.0001-0.95', str(self._name)))
             key = self._name + '_path_prefix'
             self._args[key] = path_prefix
-            utils.save_args({key: path_prefix}, self._args)
+            utils.save_args({key: path_prefix}, self._args, 'models.yaml')
 
     """ Implementation """
     def _build_graph(self):

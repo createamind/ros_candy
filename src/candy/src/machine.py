@@ -65,7 +65,7 @@ class Machine(object):
 
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        self.writer = tf.summary.FileWriter('/tmp/iminlogs/trial/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + 'image', self.sess.graph)
+        self.writer = tf.summary.FileWriter('/tmp/iminlogs/trial/', self.sess.graph)
 
         with tf.Graph().as_default() as g:
             tf.Graph.finalize(g)

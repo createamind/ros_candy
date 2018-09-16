@@ -205,7 +205,7 @@ class PPO(object):
 
     def save(self, sess):
         if self._saver:
-            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saveimage/trial/', str(self._name)))
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'models/trial/', str(self._name)))
             key = self._name + '_path_prefix'
             self._args[key] = path_prefix
             save_args({key: path_prefix}, self._args)
