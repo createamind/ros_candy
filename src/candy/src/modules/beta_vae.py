@@ -24,7 +24,7 @@ class BetaVAE(Module):
             self.inputs = tf.placeholder(tf.float32, (None, self.image_size, self.image_size, 3), name='inputs')
             self.is_training = tf.placeholder(tf.bool, (None), name='is_training')
                 
-        self.z_mu, self.z_logsigma = self._encode()
+        self.z_mu, self.z_logsigma = self._encode(self.inputs)
         self.sample_z = self._sample_norm(self.z_mu, self.z_logsigma, 'sample_z')
         self.x_mu = self._decode(self.sample_z, reuse=self.reuse)
         self.loss = self._loss(self.z_mu, self.z_logsigma, self.x_mu, self.inputs)
@@ -38,8 +38,8 @@ class BetaVAE(Module):
             timage = tf.cast((tf.clip_by_value(self.x_mu, -1, 1) + 1) * 127, tf.uint8)
             tf.summary.image('generated_image_', timage[:1])
 
-    def _encode(self):                                 
-        x = self.inputs
+    def _encode(self, inputs):                                 
+        x = inputs
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):

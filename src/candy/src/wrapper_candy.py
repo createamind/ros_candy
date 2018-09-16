@@ -107,7 +107,7 @@ class Carla_Wrapper(object):
         images, control, reward, std_control, manual, speed = inputs
         images = copy.deepcopy(images)
         for i, _ in enumerate(images):
-            images[i] = images[i].astype(np.float32) / 128 - 1
+            images[i] = images[i].astype(np.float32)
         obs = [images, speed, self.last_control]
         return obs, reward, control, std_control, manual
         

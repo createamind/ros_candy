@@ -190,16 +190,22 @@ class PPO(object):
         opt_op = self.opt.apply_gradients(gvs)
         return opt_op
 
-    def restore(self, sess):
+    def restore(self, sess, filename=None):
+        """ To restore the most recent model, simply leave filename None
+        To restore a specific version of model, set filename to the model stored in saved_models
+        """
         if self._saver:
             NO_SUCH_FILE = 'Missing_file'
-            models, key = self._models_key() 
-            path_prefix = models[key] if key in models else NO_SUCH_FILE
+            if filename:
+                path_prefix = os.path.join(sys.path[0], 'saved_models/' + filename, self._name)
+            else:
+                models, key = self._models_key() 
+                path_prefix = filename if filename is not None else (models[key] if key in models else NO_SUCH_FILE)
             if path_prefix != NO_SUCH_FILE:
                 try:
                     self._saver.restore(sess, path_prefix)
                     print("Params for {} are restored.".format(self._name))
-                    return
+                    return 
                 except:
                     del models[key]
             print('No saved model for "{}" is found. \nStart Training from Scratch!'.format(self._name))
@@ -208,6 +214,7 @@ class PPO(object):
         if self._saver:
             models, key = self._models_key()
             path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saved_models/' + self._args['model_name'], str(self._name)))
+            utils.save_args({key: path_prefix}, filename='models.yaml')
             utils.save_args({key: path_prefix}, filename='models.yaml')
 
     def _models_key(self):
