@@ -113,7 +113,7 @@ class BetaVAE(Module):
                 beta_KL = beta * KL_loss
 
             with tf.variable_scope('reconstruction_loss', reuse=self.reuse):
-                reconstruction_loss = utils.mean_square_error(labels, predictions)
+                reconstruction_loss = tf.losses.absolute_difference(labels, predictions)
             
             with tf.variable_scope('l2_regularization', reuse=self.reuse):
                 l2_loss = tf.losses.get_regularization_loss(self._name)
