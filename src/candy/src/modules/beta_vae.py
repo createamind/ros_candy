@@ -140,7 +140,7 @@ class BetaVAE(Module):
 
         with tf.variable_scope('optimizer', reuse=self.reuse):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            global_step = tf.get_variable('global_step', shape=(), initializer=0, trainable=False)
+            global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, 1000, 0.95, staircase=True)
             self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 

@@ -25,23 +25,23 @@ class Module(object):
     
     def restore(self, sess):
         if self._saver:
-            key = self._name + '_path_prefix'
-            no_such_file = 'Missing_file'
-            models = load_args('models.yaml')
-            path_prefix = models[key] if key in models else no_such_file
-            if path_prefix != no_such_file:
+            NO_SUCH_FILE = 'Missing_file'
+            models, key = self._models_key() 
+            path_prefix = models[key] if key in models else NO_SUCH_FILE
+            if path_prefix != NO_SUCH_FILE:
                 try:
                     self._saver.restore(sess, path_prefix)
-                    print("Params for {} are restored".format(self._name))
+                    print("Params for {} are restored.".format(self._name))
+                    return 
                 except:
-                    del self._args[key]
-    
+                    del models[key]
+            print('No saved model for "{}" is found. \nStart Training from Scratch!'.format(self._name))
+
     def save(self, sess):
         if self._saver:
-            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'models/trial/0.0001-0.95', str(self._name)))
-            key = self._name + '_path_prefix'
-            self._args[key] = path_prefix
-            utils.save_args({key: path_prefix}, self._args, 'models.yaml')
+            models, key = self._models_key()
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saved_models/' + self._args['model_name'], str(self._name)))
+            utils.save_args({key: path_prefix}, filename='models.yaml')
 
     """ Implementation """
     def _build_graph(self):
@@ -81,3 +81,6 @@ class Module(object):
         x = utils.bn_relu(x, self.is_training)
 
         return x
+
+    def _models_key(self):
+        return utils.load_args('models.yaml'), self._name + self._args['model_name']

@@ -9,7 +9,7 @@ import gym
 from gym.spaces import Box, Discrete, Tuple
 # from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch, lstm, lnlstm
 from modules.utils.distributions_1 import make_pdtype
-from modules.utils.utils import save_args
+import modules.utils.utils as utils
 import sys
 from tensorflow.contrib import rnn
 
@@ -191,21 +191,24 @@ class PPO(object):
         return opt_op
 
     def restore(self, sess):
-        if self._saver is not None:
-            key = self._name + '_path_prefix'
-            no_such_file = 'Missing_file'
-            path_prefix = self._args[key] if key in self._args else no_such_file
-            if path_prefix != no_such_file:
+        if self._saver:
+            NO_SUCH_FILE = 'Missing_file'
+            models, key = self._models_key() 
+            path_prefix = models[key] if key in models else NO_SUCH_FILE
+            if path_prefix != NO_SUCH_FILE:
                 try:
                     self._saver.restore(sess, path_prefix)
-                    print("Params for {} are restored".format(self._name))
+                    print("Params for {} are restored.".format(self._name))
+                    return
                 except:
-                    del self._args[key]
-                return
+                    del models[key]
+            print('No saved model for "{}" is found. \nStart Training from Scratch!'.format(self._name))
 
     def save(self, sess):
         if self._saver:
-            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'models/trial/', str(self._name)))
-            key = self._name + '_path_prefix'
-            self._args[key] = path_prefix
-            save_args({key: path_prefix}, self._args)
+            models, key = self._models_key()
+            path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saved_models/' + self._args['model_name'], str(self._name)))
+            utils.save_args({key: path_prefix}, filename='models.yaml')
+
+    def _models_key(self):
+        return utils.load_args('models.yaml'), self._name + self._args['model_name']

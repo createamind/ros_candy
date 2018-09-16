@@ -62,10 +62,10 @@ class Machine(object):
         config = tf.ConfigProto(allow_soft_placement = True)
         config.gpu_options.allow_growth = True
 
-
+        
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        self.writer = tf.summary.FileWriter('/tmp/iminlogs/trial/', self.sess.graph)
+        self.writer = tf.summary.FileWriter('/tmp/iminlogs/trial/' + self._args['model_name'], self.sess.graph)
 
         with tf.Graph().as_default() as g:
             tf.Graph.finalize(g)
