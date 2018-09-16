@@ -31,12 +31,12 @@ class BetaVAE(Module):
 
         # add image summaries at training time
         with tf.name_scope('image'):
-                # record an original image
-                timage = tf.cast((tf.clip_by_value(self.inputs, -1, 1) + 1) * 127, tf.uint8)
-                tf.summary.image('original_image', timage[:1])
-                # record a generated image
-                timage = tf.cast((tf.clip_by_value(self.x_mu, -1, 1) + 1) * 127, tf.uint8)
-                tf.summary.image('generated_image', timage[:1])
+            # record an original image
+            timage = tf.cast((tf.clip_by_value(self.inputs, -1, 1) + 1) * 127, tf.uint8)
+            tf.summary.image('original_image_', timage[:1])
+            # record a generated image
+            timage = tf.cast((tf.clip_by_value(self.x_mu, -1, 1) + 1) * 127, tf.uint8)
+            tf.summary.image('generated_image_', timage[:1])
 
     def _encode(self):                                 
         x = self.inputs
@@ -58,11 +58,10 @@ class BetaVAE(Module):
             
             mu, logsigma = tf.split(x, 2, -1)
 
-            # record some weights
-        if not self.reuse:
-            with tf.variable_scope('encoder', reuse=True):
-                w = tf.get_variable('conv2d/kernel')
-                tf.summary.histogram('conv0_weights', w)
+        # record some weights
+        with tf.variable_scope('encoder', reuse=True):
+            w = tf.get_variable('conv2d/kernel')
+            tf.summary.histogram('conv0_weights_', w)
 
         return mu, logsigma
 
@@ -72,7 +71,7 @@ class BetaVAE(Module):
             epsilon = tf.random_normal(tf.shape(mu))
 
             sample = mu + sigma * epsilon
-            tf.summary.histogram(scope, sample)
+        tf.summary.histogram(scope + '_', sample)
 
         return sample
 
@@ -97,11 +96,10 @@ class BetaVAE(Module):
 
             x_mu = x
             
-        if not self.reuse:
-            with tf.variable_scope('decoder', reuse=True):
-                # record some weights
-                w = tf.get_variable('conv2d_transpose_5/kernel')
-                tf.summary.histogram('convtrans5_weights', w)
+        # record some weights
+        with tf.variable_scope('decoder', reuse=True):
+            w = tf.get_variable('conv2d_transpose_5/kernel')
+            tf.summary.histogram('convtrans5_weights_', w)
 
         return x_mu
 
@@ -114,21 +112,22 @@ class BetaVAE(Module):
                 new_beta = tf.assign(beta, tf.minimum(1.0005 * beta, MAX_BETA))
                 beta_KL = beta * KL_loss
 
-            with tf.variable_scope('reconstruction_error', reuse=self.reuse):
+            with tf.variable_scope('reconstruction_loss', reuse=self.reuse):
                 reconstruction_loss = utils.mean_square_error(labels, predictions)
             
-            with tf.variable_scope('l2_regulization', reuse=self.reuse):
-                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
+            with tf.variable_scope('l2_regularization', reuse=self.reuse):
+                l2_loss = tf.losses.get_regularization_loss(self._name)
             
-            with tf.control_dependencies([new_beta]):
-                loss = reconstruction_loss + beta_KL + l2_loss
+            with tf.variable_scope('total_loss', reuse=self.reuse):
+                with tf.control_dependencies([new_beta]):
+                    loss = reconstruction_loss + beta_KL + l2_loss
 
-            tf.summary.scalar('reconstruction_error', reconstruction_loss)
-            tf.summary.scalar('beta', beta)
-            tf.summary.scalar('KL_loss', KL_loss)
-            tf.summary.scalar('beta_KL', beta_KL)
-            tf.summary.scalar('l2_loss', l2_loss)
-            tf.summary.scalar('total_loss', loss)
+            tf.summary.scalar('reconstruction_error_', reconstruction_loss)
+            tf.summary.scalar('beta_', beta)
+            tf.summary.scalar('kl_loss_', KL_loss)
+            tf.summary.scalar('beta_kl_', beta_KL)
+            tf.summary.scalar('l2_regularization_', l2_loss)
+            tf.summary.scalar('total_loss_', loss)
 
         return loss
 
@@ -144,7 +143,7 @@ class BetaVAE(Module):
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, 1000, 0.95, staircase=True)
             self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 
-            tf.summary.scalar('learning_rate', learning_rate)
+            tf.summary.scalar('learning_rate_', learning_rate)
 
         with tf.control_dependencies(update_ops):
             opt_op = self._optimizer.minimize(loss, global_step=global_step)

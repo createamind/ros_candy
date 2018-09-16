@@ -52,13 +52,13 @@ class TCVAE(BetaVAE):
             with tf.variable_scope('total_loss', reuse=self.reuse):
                 loss = reconstruction_loss + KL_loss + l2_loss
 
-            tf.summary.scalar('Reconstruction_error', reconstruction_loss)
-            tf.summary.scalar('MI_loss', MI_loss)
-            tf.summary.scalar('TC_loss', TC_loss)
-            tf.summary.scalar('Dimension_wise_KL', Dimension_wise_KL)
-            tf.summary.scalar('KL_loss', KL_loss)
-            tf.summary.scalar('L2_loss', l2_loss)
-            tf.summary.scalar('Total_loss', loss)
+            tf.summary.scalar('Reconstruction_error_', reconstruction_loss)
+            tf.summary.scalar('MI_loss_', MI_loss)
+            tf.summary.scalar('TC_loss_', TC_loss)
+            tf.summary.scalar('Dimension_wise_KL_', Dimension_wise_KL)
+            tf.summary.scalar('KL_loss_', KL_loss)
+            tf.summary.scalar('L2_loss_', l2_loss)
+            tf.summary.scalar('Total_loss_', loss)
 
         return loss
 
