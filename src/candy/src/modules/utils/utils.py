@@ -15,9 +15,6 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
 def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
-def kl_loss(mu, logsigma):
-    return tf.reduce_mean(-0.5 * tf.reduce_sum(1. + 2. * logsigma - mu**2 - tf.exp(2 * logsigma), axis=1), axis=0)
-
 def default_path(filename):
     return os.path.join(sys.path[0], filename)
 
@@ -53,3 +50,4 @@ def logsumexp(value, axis=None, keepdims=False):
     else:
         max_value = tf.reduce_max(value)
         return max_value + tf.log(tf.reduce_sum(tf.exp(value - max_value)))
+

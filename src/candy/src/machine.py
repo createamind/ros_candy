@@ -161,7 +161,7 @@ class Machine(object):
         td_map[self.test_speed] = np.array([[obs[0][1]]]) # speed
 
         summary, _ = self.sess.run([self.merged, self.final_ops], feed_dict=td_map)
-        if global_step % 1 == 0:
+        if global_step % 10 == 0:
             self.writer.add_summary(summary, global_step)
 
     def save(self):
