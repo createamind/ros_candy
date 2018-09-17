@@ -36,7 +36,7 @@ class BetaVAE(Module):
             tf.summary.image('original_image_', self.inputs[:1])
             # record a generated image
             timage = tf.cast((tf.clip_by_value(self.x_mu * self.std + self.mean, 0, 255)), tf.uint8)
-            tf.summary.image('generated_image_', timage)
+            tf.summary.image('generated_image_', timage[:1])
 
     def _preprocess_images(self, images):
         with tf.name_scope('preprocessing'):
