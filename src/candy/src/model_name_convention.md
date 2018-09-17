@@ -1,1 +1,1 @@
-learning_rate-learning_rate_decay_others
+learning_rate-learning_rate_decay-weight_decay-loss_function-others
