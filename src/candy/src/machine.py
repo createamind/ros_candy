@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
-from modules.beta_vae import BetaVAE
+from modules.tc_vae import TCVAE
 from modules.ppo import PPO
 
 import tensorflow as tf
@@ -29,9 +29,9 @@ class Machine(object):
         self._args = args
 
         #Building Graph
-        self.camera = BetaVAE('camera', args, False)
-        self.left_eye = BetaVAE('left_eye', args, False)
-        self.right_eye = BetaVAE('right_eye', args, False)
+        self.camera = TCVAE('camera', args, False)
+        self.left_eye = TCVAE('left_eye', args, False)
+        self.right_eye = TCVAE('right_eye', args, False)
 
         self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
