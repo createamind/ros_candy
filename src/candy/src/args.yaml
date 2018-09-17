@@ -1,21 +1,21 @@
 ---
 camera:
-    learning_rate: 0.0001
+    learning_rate: 0.00005
     weight_decay: 0.01
     alpha: 1
-    beta: 0.00001
+    beta: 6
     gamma: 1
 left_eye:
-    learning_rate: 0.0001
+    learning_rate: 0.00005
     weight_decay: 0.01
     alpha: 1
-    beta: 0.00001
+    beta: 6
     gamma: 1
 right_eye:
-    learning_rate: 0.0001
+    learning_rate: 0.00005
     weight_decay: 0.01
     alpha: 1
-    beta: 0.00001
+    beta: 6
     gamma: 1
 ppo:
     learning_rate: 0.0005
@@ -25,6 +25,6 @@ imitation_coefficient: 0.9
 batch_size: 64
 image_size: 320
 dataset_size: 10000
-z_size: 256
+z_size: 128
 
-model_name: 0.0001-0.95-0.01-l2loss-normalized_image-beta1
+model_name: 0.0001-0.95-0.01-l2loss-normalized_image-tcvae_1_6_1-z128-filter3-half_z
