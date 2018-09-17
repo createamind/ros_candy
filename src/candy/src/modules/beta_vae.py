@@ -4,6 +4,7 @@ import os
 import sys
 import yaml
 import modules.utils.utils as utils
+import modules.utils.loss as loss
 from modules.module import Module
 
 class BetaVAE(Module):
@@ -50,12 +51,12 @@ class BetaVAE(Module):
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):
-            x = self._conv_bn_relu(x, 16, 4, 2)                  # x = 160, 160, 16
-            x = self._conv_bn_relu(x, 32, 4, 2)                  # x = 80, 80, 32
-            x = self._conv_bn_relu(x, 64, 4, 2)                  # x = 40, 40, 64
-            x = self._conv_bn_relu(x, 128, 4, 2)                 # x = 20, 20, 128
-            x = self._conv_bn_relu(x, 256, 4, 2)                 # x = 10, 10, 256
-            x = self._conv_bn_relu(x, 512, 4, 2)                 # x = 5, 5, 512
+            x = self._conv_bn_relu(x, 16, 3, 2)                  # x = 160, 160, 16
+            x = self._conv_bn_relu(x, 32, 3, 2)                  # x = 80, 80, 32
+            x = self._conv_bn_relu(x, 64, 3, 2)                  # x = 40, 40, 64
+            x = self._conv_bn_relu(x, 128, 3, 2)                 # x = 20, 20, 128
+            x = self._conv_bn_relu(x, 256, 3, 2)                 # x = 10, 10, 256
+            x = self._conv_bn_relu(x, 512, 3, 2)                 # x = 5, 5, 512
             self.dim_feature_map = x
             """ Version without dense layer """
             x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
@@ -96,12 +97,12 @@ class BetaVAE(Module):
 
             x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
 
-            x = self._convtrans_bn_relu(x, 256, 4, 2)                    # x = 10, 10, 256
-            x = self._convtrans_bn_relu(x, 128, 4, 2)                    # x = 20, 20, 128
-            x = self._convtrans_bn_relu(x, 64, 4, 2)                     # x = 40, 40, 64
-            x = self._convtrans_bn_relu(x, 32, 4, 2)                     # x = 80, 80, 32
-            x = self._convtrans_bn_relu(x, 16, 4, 2)                     # x = 160, 160, 16
-            x = self._convtrans(x, 3, 4, 2, kernel_initializer=utils.xavier_initializer())
+            x = self._convtrans_bn_relu(x, 256, 3, 2)                    # x = 10, 10, 256
+            x = self._convtrans_bn_relu(x, 128, 3, 2)                    # x = 20, 20, 128
+            x = self._convtrans_bn_relu(x, 64, 3, 2)                     # x = 40, 40, 64
+            x = self._convtrans_bn_relu(x, 32, 3, 2)                     # x = 80, 80, 32
+            x = self._convtrans_bn_relu(x, 16, 3, 2)                     # x = 160, 160, 16
+            x = self._convtrans(x, 3, 3, 2, kernel_initializer=utils.xavier_initializer())
             # x = 320, 320, 3
             x = tf.tanh(x)
 
@@ -117,7 +118,8 @@ class BetaVAE(Module):
     def _loss(self, mu, logsigma, labels, predictions):
         with tf.name_scope('loss'):
             with tf.name_scope('kl_loss'):
-                KL_loss = utils.kl_loss(mu, logsigma) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
+                half_z = self.z_size // 2
+                KL_loss = loss.kl_loss(mu[: half_z], logsigma[: half_z]) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
                 beta = self._args[self._name]['beta']
                 beta_KL = beta * KL_loss
 
@@ -136,7 +138,7 @@ class BetaVAE(Module):
             tf.summary.scalar('beta_kl_', beta_KL)
             tf.summary.scalar('l2_regularization_', l2_loss)
             tf.summary.scalar('total_loss_', loss)
-
+        
         return loss
 
     def _optimize(self, loss):
@@ -155,5 +157,12 @@ class BetaVAE(Module):
 
         with tf.control_dependencies(update_ops):
             opt_op = self._optimizer.minimize(loss, global_step=global_step)
+
+        with tf.name_scope('gradient'):
+            grad_var_pairs = self._optimizer.compute_gradients(loss)
+            for grad, var in grad_var_pairs:
+                if grad is None:
+                    continue
+                tf.summary.histogram(var.name.replace(':0', '/gradient'), grad)
 
         return opt_op
