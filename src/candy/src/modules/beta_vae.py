@@ -69,6 +69,10 @@ class BetaVAE(Module):
         with tf.variable_scope('encoder', reuse=True):
             w = tf.get_variable('conv2d/kernel')
             tf.summary.histogram('conv0_weights_', w)
+            w = tf.get_variable('conv2d_3/kernel')
+            tf.summary.histogram('conv3_weights_', w)
+            w = tf.get_variable('conv2d_6/kernel')
+            tf.summary.histogram('conv6_weights_', w)
 
         return mu, logsigma
 
@@ -113,7 +117,7 @@ class BetaVAE(Module):
     def _loss(self, mu, logsigma, labels, predictions):
         with tf.name_scope('loss'):
             with tf.name_scope('kl_loss'):
-                KL_loss = utils.kl_loss(mu, logsigma)
+                KL_loss = utils.kl_loss(mu, logsigma) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
                 beta = self._args[self._name]['beta']
                 beta_KL = beta * KL_loss
 
