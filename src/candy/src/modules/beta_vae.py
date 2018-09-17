@@ -14,13 +14,13 @@ class BetaVAE(Module):
         super(BetaVAE, self).__init__(name, args, reuse)
 
     def generate(self, sess, num_images=1):
-        with tf.variable_scope(self._name, reuse=True):
+        with tf.name_scope(self._name):
             sample_z = np.random.normal(size=(num_images, self.z_size))
             return sess.run(self.x_mu, feed_dict={self.sample_z: sample_z})
 
     """" Implementation """
     def _build_graph(self):
-        with tf.variable_scope('placeholder', reuse=self.reuse):
+        with tf.name_scope('placeholder'):
             self.inputs = tf.placeholder(tf.float32, (None, self.image_size, self.image_size, 3), name='inputs')
             self.is_training = tf.placeholder(tf.bool, (None), name='is_training')
                 
@@ -72,8 +72,8 @@ class BetaVAE(Module):
 
         return mu, logsigma
 
-    def _sample_norm(self, mu, logsigma, scope, reuse=None):
-        with tf.variable_scope(scope, reuse=self.reuse if reuse is None else reuse):
+    def _sample_norm(self, mu, logsigma, scope):
+        with tf.name_scope(scope):
             sigma = tf.exp(logsigma)
             epsilon = tf.random_normal(tf.shape(mu))
 
@@ -111,23 +111,20 @@ class BetaVAE(Module):
         return x_mu
 
     def _loss(self, mu, logsigma, labels, predictions):
-        with tf.variable_scope('loss', reuse=self.reuse):
-            with tf.variable_scope('kl_loss', reuse=self.reuse):
+        with tf.name_scope('loss'):
+            with tf.name_scope('kl_loss'):
                 KL_loss = utils.kl_loss(mu, logsigma)
-                MAX_BETA = self._args[self._name]['beta']
-                beta = tf.get_variable('beta', shape=(), initializer=tf.constant_initializer([1e-6]), trainable=False, dtype=tf.float32)
-                new_beta = tf.assign(beta, tf.minimum(1.0005 * beta, MAX_BETA))
+                beta = self._args[self._name]['beta']
                 beta_KL = beta * KL_loss
 
-            with tf.variable_scope('reconstruction_loss', reuse=self.reuse):
+            with tf.name_scope('reconstruction_loss'):
                 reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
             
-            with tf.variable_scope('regularization', reuse=self.reuse):
+            with tf.name_scope('regularization'):
                 l2_loss = tf.losses.get_regularization_loss(self._name)
             
-            with tf.variable_scope('total_loss', reuse=self.reuse):
-                with tf.control_dependencies([new_beta]):
-                    loss = reconstruction_loss + beta_KL + l2_loss
+            with tf.name_scope('total_loss'):
+                loss = reconstruction_loss + beta_KL + l2_loss
 
             tf.summary.scalar('reconstruction_error_', reconstruction_loss)
             tf.summary.scalar('beta_', beta)
@@ -144,7 +141,7 @@ class BetaVAE(Module):
         beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
         beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
 
-        with tf.variable_scope('optimizer', reuse=self.reuse):
+        with tf.name_scope('optimizer'):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, 1000, 0.95, staircase=True)
