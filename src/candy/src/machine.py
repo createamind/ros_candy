@@ -64,7 +64,7 @@ class Machine(object):
         
         self.merged = tf.summary.merge_all()
         self.sess = tf.Session(config = config)
-        summary_path = '/tmp/iminlogs/trial/' + self._args['model_name']
+        summary_path = '/tmp/iminlogs/{}/'.format(self._args['model_name'])
         self.writer = tf.summary.FileWriter(summary_path, self.sess.graph)
 
         with tf.Graph().as_default() as g:

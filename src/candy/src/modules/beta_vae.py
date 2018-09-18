@@ -4,7 +4,7 @@ import os
 import sys
 import yaml
 import modules.utils.utils as utils
-import modules.utils.loss as loss
+import modules.utils.losses as losses
 from modules.module import Module
 
 class BetaVAE(Module):
@@ -118,8 +118,7 @@ class BetaVAE(Module):
     def _loss(self, mu, logsigma, labels, predictions):
         with tf.name_scope('loss'):
             with tf.name_scope('kl_loss'):
-                half_z = self.z_size // 2
-                KL_loss = loss.kl_loss(mu[: half_z], logsigma[: half_z]) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
+                KL_loss = losses.kl_loss(mu, logsigma) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
                 beta = self._args[self._name]['beta']
                 beta_KL = beta * KL_loss
 
