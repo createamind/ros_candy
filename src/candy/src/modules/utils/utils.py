@@ -51,3 +51,21 @@ def logsumexp(value, axis=None, keepdims=False):
         max_value = tf.reduce_max(value)
         return max_value + tf.log(tf.reduce_sum(tf.exp(value - max_value)))
 
+def standard_normalization(images):
+    mean, var = tf.nn.moments(images, [0, 1, 2])
+    std = tf.sqrt(var)
+
+    normalized_images = (images - mean) / std
+    
+    return normalized_images, mean, std
+
+def range_normalization(images, new_min=-1., new_max=1., output_int=False):
+    orig_min = tf.reduce_min(images, (0, 1, 2))
+    orig_max = tf.reduce_max(images, (0, 1, 2))
+
+    normalized_images = images * (new_max - new_min) / (orig_max - orig_min) + new_min
+    if output_int:
+        normalized_images = tf.cast(normalized_images, tf.uint8)
+
+    return normalized_images, orig_min, orig_max
+    
