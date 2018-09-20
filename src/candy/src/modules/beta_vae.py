@@ -25,7 +25,10 @@ class BetaVAE(Module):
             outputs = sess.run(generated_image, feed_dict={self.sample_z: sample_z})
 
             return outputs
-
+    
+    @property
+    def trainable_variables(self):
+        return tf.trainable_variables(scope=self._name)
     """" Implementation """
     def _build_graph(self):
         with tf.name_scope('placeholder'):
@@ -108,7 +111,6 @@ class BetaVAE(Module):
             x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
 
             x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
-
             x = self._convtrans_bn_relu(x, 256, 3, 2)                    # x = 10, 10, 256
             x = self._convtrans_bn_relu(x, 128, 3, 2)                    # x = 20, 20, 128
             x = self._convtrans_bn_relu(x, 64, 3, 2)                     # x = 40, 40, 64
@@ -173,5 +175,10 @@ class BetaVAE(Module):
                 if grad is None:
                     continue
                 tf.summary.histogram(var.name.replace(':0', '/gradient'), grad)
+
+        with tf.name_scope('weights'):
+            for var in self.trainable_variables:
+                tf.summary.histogram(var.name.replace(':0', ''), var)
+            
 
         return opt_op

@@ -4,9 +4,4 @@
 
 ### THE MOST IMPORTANT PART	
 
-TCVAE and DIM are just prototypes, and haven't been tested yet.
-
-
-
-
-
+There's something wrong with DIM.
