@@ -5,11 +5,6 @@ from modules.beta_vae import BetaVAE
 import modules.utils.utils as utils
 import modules.utils.tf_utils as tf_utils
 
-""" 
-Unfinished, waiting for incoporation
-Only compute the local mutual information
-The global one shouldn't be much different
-"""
 class DIM(BetaVAE):
     """ Interface """
     def __init__(self, name, args, reuse=False):
