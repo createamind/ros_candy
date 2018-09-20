@@ -18,17 +18,14 @@ class BetaVAE(Module):
         super(BetaVAE, self).__init__(name, args, reuse)
 
     def generate(self, sess, num_images=1):
-        with tf.name_scope(self._name):
+        with tf.name_scope(self.name):
             sample_z = np.random.normal(size=(num_images, self.z_size))
             generated_image = self._restore_images(self.x_mu)
             
             outputs = sess.run(generated_image, feed_dict={self.sample_z: sample_z})
 
             return outputs
-    
-    @property
-    def trainable_variables(self):
-        return tf.trainable_variables(scope=self._name)
+        
     """" Implementation """
     def _build_graph(self):
         with tf.name_scope('placeholder'):
@@ -40,6 +37,7 @@ class BetaVAE(Module):
         self.sample_z = self._sample_norm(self.z_mu, self.z_logsigma, 'sample_z')
         self.x_mu = self._decode(self.sample_z, reuse=self.reuse)
         self.loss = self._loss(self.z_mu, self.z_logsigma, self.normalized_images, self.x_mu)
+        self.opt_op = self._optimize(self.loss)
 
         # add images to tf.summary
         with tf.name_scope('image'):
@@ -138,7 +136,7 @@ class BetaVAE(Module):
                 reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
 
             with tf.name_scope('regularization'):
-                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_regularization')
+                l2_loss = tf.losses.get_regularization_loss(self.name, name='l2_regularization')
             
             with tf.name_scope('total_loss'):
                 loss = reconstruction_loss + KL_loss + l2_loss
@@ -149,36 +147,3 @@ class BetaVAE(Module):
             tf.summary.scalar('Total_loss_', loss)
         
         return loss
-
-    def _optimize(self, loss):
-        # params for optimizer
-        init_learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
-        beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
-        beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
-        decay_rate = self._args[self._name]['decay_rate'] if 'decay_rate' in self._args[self._name] else 0.95
-        decay_steps = self._args[self._name]['decay_steps'] if 'decay_steps' in self._args[self._name] else 1000
-
-        with tf.name_scope('optimizer'):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
-            learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
-            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
-
-            tf.summary.scalar('learning_rate_', learning_rate)
-
-        with tf.control_dependencies(update_ops):
-            opt_op = self._optimizer.minimize(loss, global_step=global_step)
-
-        with tf.name_scope('gradients'):
-            grad_var_pairs = self._optimizer.compute_gradients(loss)
-            for grad, var in grad_var_pairs:
-                if grad is None:
-                    continue
-                tf.summary.histogram(var.name.replace(':0', '/gradient'), grad)
-
-        with tf.name_scope('weights'):
-            for var in self.trainable_variables:
-                tf.summary.histogram(var.name.replace(':0', ''), var)
-            
-
-        return opt_op
