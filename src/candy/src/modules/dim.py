@@ -21,7 +21,7 @@ class DIM(BetaVAE):
                 reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
             
             with tf.name_scope('l2_regularization'):
-                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
+                l2_loss = tf.losses.get_regularization_loss(self.name, name='l2_loss')
 
             with tf.name_scope('total_loss'):
                 loss = reconstruction_loss - 10 * local_MI + l2_loss
@@ -57,7 +57,9 @@ class DIM(BetaVAE):
             
             # here's where the error is introduced
             if shuffle:
+                feature_map = tf.reshape(feature_map, (-1, channels))
                 feature_map = tf.random_shuffle(feature_map)
+                feature_map = tf.reshape(feature_map, (-1, height, width, channels))
                 feature_map = tf.stop_gradient(feature_map)
             
             # expand z
