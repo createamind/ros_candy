@@ -4,20 +4,27 @@ import os
 import sys
 import yaml
 import modules.utils.utils as utils
+import modules.utils.tf_utils as tf_utils
 import modules.utils.losses as losses
 from modules.module import Module
 
 class BetaVAE(Module):
     """ Interface """
-    def __init__(self, name, args, reuse=False):
+    def __init__(self, name, args, reuse=False, standard_normalization=False):
         self.z_size = args['z_size']
         self.image_size = args['image_size']
+        self.beta = args[name]['beta']
+        self.standard_normalization = standard_normalization
         super(BetaVAE, self).__init__(name, args, reuse)
 
     def generate(self, sess, num_images=1):
         with tf.name_scope(self._name):
             sample_z = np.random.normal(size=(num_images, self.z_size))
-            return sess.run(self.x_mu, feed_dict={self.sample_z: sample_z})
+            generated_image = self._restore_images(self.x_mu)
+            
+            outputs = sess.run(generated_image, feed_dict={self.sample_z: sample_z})
+
+            return outputs
 
     """" Implementation """
     def _build_graph(self):
@@ -31,20 +38,35 @@ class BetaVAE(Module):
         self.x_mu = self._decode(self.sample_z, reuse=self.reuse)
         self.loss = self._loss(self.z_mu, self.z_logsigma, self.normalized_images, self.x_mu)
 
-        # add image to tf.summary
+        # add images to tf.summary
         with tf.name_scope('image'):
             # record an original image
             tf.summary.image('original_image_', self.inputs[:1])
+            tf.summary.histogram('original_image_hist_', self.inputs[:1])
+            timage = self._restore_images(self.normalized_images)
+            tf.summary.image('restored_image', timage[:1])
             # record a generated image
-            timage = tf.cast((tf.clip_by_value(self.x_mu * self.std + self.mean, 0, 255)), tf.uint8)
+            timage = self._restore_images(self.x_mu)
             tf.summary.image('generated_image_', timage[:1])
+            tf.summary.histogram('generated_image_hist_', timage[:1])
 
     def _preprocess_images(self, images):
         with tf.name_scope('preprocessing'):
-            self.mean, var = tf.nn.moments(images, [0, 1, 2])
-            self.std = tf.sqrt(var)
-            normalized_images = (images - self.mean) / self.std
+            if self.standard_normalization:
+                normalized_images, self.mean, self.std = tf_utils.standard_normalization(images)
+            else:
+                normalized_images = tf_utils.range_normalization(images)
+
         return normalized_images
+
+    def _restore_images(self, normalized_images):
+        with tf.name_scope('restore_image'):
+            if self.standard_normalization:
+                images = tf.cast(tf.clip_by_value(normalized_images * self.std + self.mean, 0, 255), tf.uint8)
+            else:
+                images = tf_utils.range_normalization(normalized_images, normalizing=False)
+
+        return images
 
     def _encode(self, inputs):                                 
         x = inputs
@@ -58,12 +80,14 @@ class BetaVAE(Module):
             x = self._conv_bn_relu(x, 256, 3, 2)                 # x = 10, 10, 256
             x = self._conv_bn_relu(x, 512, 3, 2)                 # x = 5, 5, 512
             self.dim_feature_map = x
-            """ Version without dense layer """
-            x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=utils.xavier_initializer())  
+            # """ Version without dense layer """
+            # x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=tf_utils.xavier_initializer())  
             # x = 1, 1, 2 * z_size
 
-            x = tf.reshape(x, [-1, 2 * self.z_size])
+            # x = tf.reshape(x, [-1, 2 * self.z_size])
             
+            x = tf.reshape(x, (-1, 5 * 5 * 512))
+            x = self._dense(x, 2 * self.z_size)
             mu, logsigma = tf.split(x, 2, -1)
 
         # record some weights
@@ -72,8 +96,6 @@ class BetaVAE(Module):
             tf.summary.histogram('conv0_weights_', w)
             w = tf.get_variable('conv2d_3/kernel')
             tf.summary.histogram('conv3_weights_', w)
-            w = tf.get_variable('conv2d_6/kernel')
-            tf.summary.histogram('conv6_weights_', w)
 
         return mu, logsigma
 
@@ -92,17 +114,19 @@ class BetaVAE(Module):
 
         # decoder net
         with tf.variable_scope('decoder', reuse=reuse):
-            """ Version without dense layer """
-            x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
+            # """ Version without dense layer """
+            # x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
 
-            x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
+            # x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
 
+            x = self._dense_bn_relu(x, 5 * 5 * 512)
+            x = tf.reshape(x, (-1, 5, 5, 512))
             x = self._convtrans_bn_relu(x, 256, 3, 2)                    # x = 10, 10, 256
             x = self._convtrans_bn_relu(x, 128, 3, 2)                    # x = 20, 20, 128
             x = self._convtrans_bn_relu(x, 64, 3, 2)                     # x = 40, 40, 64
             x = self._convtrans_bn_relu(x, 32, 3, 2)                     # x = 80, 80, 32
             x = self._convtrans_bn_relu(x, 16, 3, 2)                     # x = 160, 160, 16
-            x = self._convtrans(x, 3, 3, 2, kernel_initializer=utils.xavier_initializer())
+            x = self._convtrans(x, 3, 3, 2, kernel_initializer=tf_utils.xavier_initializer())
             # x = 320, 320, 3
             x = tf.tanh(x)
 
@@ -118,25 +142,21 @@ class BetaVAE(Module):
     def _loss(self, mu, logsigma, labels, predictions):
         with tf.name_scope('loss'):
             with tf.name_scope('kl_loss'):
-                KL_loss = losses.kl_loss(mu, logsigma) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
-                beta = self._args[self._name]['beta']
-                beta_KL = beta * KL_loss
+                KL_loss = self.beta * losses.kl_loss(mu, logsigma) / (self._args['image_size']**2)    # divided by image_size**2 because we use MSE for reconstruction loss
 
             with tf.name_scope('reconstruction_loss'):
                 reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
-            
+
             with tf.name_scope('regularization'):
-                l2_loss = tf.losses.get_regularization_loss(self._name)
+                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_regularization')
             
             with tf.name_scope('total_loss'):
-                loss = reconstruction_loss + beta_KL + l2_loss
+                loss = reconstruction_loss + KL_loss + l2_loss
 
-            tf.summary.scalar('reconstruction_error_', reconstruction_loss)
-            tf.summary.scalar('beta_', beta)
-            tf.summary.scalar('kl_loss_', KL_loss)
-            tf.summary.scalar('beta_kl_', beta_KL)
-            tf.summary.scalar('l2_regularization_', l2_loss)
-            tf.summary.scalar('total_loss_', loss)
+            tf.summary.scalar('Reconstruction_error_', reconstruction_loss)
+            tf.summary.scalar('KL_loss_', KL_loss)
+            tf.summary.scalar('L2_loss_', l2_loss)
+            tf.summary.scalar('Total_loss_', loss)
         
         return loss
 
@@ -145,11 +165,13 @@ class BetaVAE(Module):
         init_learning_rate = self._args[self._name]['learning_rate'] if 'learning_rate' in self._args[self._name] else 1e-3
         beta1 = self._args[self._name]['beta1'] if 'beta1' in self._args[self._name] else 0.9
         beta2 = self._args[self._name]['beta2'] if 'beta2' in self._args[self._name] else 0.999
+        decay_rate = self._args[self._name]['decay_rate'] if 'decay_rate' in self._args[self._name] else 0.95
+        decay_steps = self._args[self._name]['decay_steps'] if 'decay_steps' in self._args[self._name] else 1000
 
         with tf.name_scope('optimizer'):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
-            learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, 1000, 0.95, staircase=True)
+            learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
             self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 
             tf.summary.scalar('learning_rate_', learning_rate)
@@ -157,7 +179,7 @@ class BetaVAE(Module):
         with tf.control_dependencies(update_ops):
             opt_op = self._optimizer.minimize(loss, global_step=global_step)
 
-        with tf.name_scope('gradient'):
+        with tf.name_scope('gradients'):
             grad_var_pairs = self._optimizer.compute_gradients(loss)
             for grad, var in grad_var_pairs:
                 if grad is None:
