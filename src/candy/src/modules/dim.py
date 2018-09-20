@@ -57,7 +57,6 @@ class DIM(BetaVAE):
             
             # here's where the error is introduced
             if shuffle:
-                original_map = feature_map
                 feature_map = tf.random_shuffle(feature_map)
                 feature_map = tf.stop_gradient(feature_map)
             
