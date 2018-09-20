@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
-from modules.tc_vae import TCVAE
+from modules.dim import DIM
 from modules.ppo import PPO
 
 import tensorflow as tf
@@ -16,7 +16,7 @@ from std_msgs.msg import String
 from candy.srv import Step, Value, UpdateWeights
 from tqdm import tqdm
 import rospy
-from modules.utils.utils import default_path, load_args
+from modules.utils.utils import load_args
 import random
 import sys
 if not (sys.version_info[0] < 3):
@@ -29,9 +29,9 @@ class Machine(object):
         self._args = args
 
         #Building Graph
-        self.camera = TCVAE('camera', args, False)
-        self.left_eye = TCVAE('left_eye', args, False)
-        self.right_eye = TCVAE('right_eye', args, False)
+        self.camera = DIM('camera', args, False)
+        self.left_eye = DIM('left_eye', args, False)
+        self.right_eye = DIM('right_eye', args, False)
 
         self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')
