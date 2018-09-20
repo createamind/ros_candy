@@ -1,5 +1,6 @@
 import tensorflow as tf
 import modules.utils.utils as utils
+import modules.utils.tf_utils as tf_utils
 import os
 import sys
 
@@ -32,7 +33,8 @@ class Module(object):
             if filename:
                 path_prefix = os.path.join(sys.path[0], 'saved_models/' + filename, self._name)
             else:
-                models, key = self._models_key() 
+                models = self._get_models()
+                key = self._get_model_name()
                 path_prefix = filename if filename is not None else (models[key] if key in models else NO_SUCH_FILE)
             if path_prefix != NO_SUCH_FILE:
                 try:
@@ -45,7 +47,7 @@ class Module(object):
 
     def save(self, sess):
         if self._saver:
-            models, key = self._models_key()
+            key = self._get_model_name()
             path_prefix = self._saver.save(sess, os.path.join(sys.path[0], 'saved_models/' + self._args['model_name'], str(self._name)))
             utils.save_args({key: path_prefix}, filename='models.yaml')
 
@@ -56,37 +58,40 @@ class Module(object):
     def _optimize(self, loss):
         raise NotImplementedError
 
-    def _dense(self, x, units, kernel_initializer=utils.xavier_initializer()):
-        return tf.layers._dense(x, units, kernel_initializer=kernel_initializer, 
+    def _dense(self, x, units, kernel_initializer=tf_utils.xavier_initializer()):
+        return tf.layers.dense(x, units, kernel_initializer=kernel_initializer, 
                                kernel_regularizer=self.l2_regularizer)
 
-    def _dense_bn_relu(self, x, units, kernel_initializer=utils.kaiming_initializer()):
+    def _dense_bn_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._dense(x, units, kernel_initializer=kernel_initializer)
-        x = utils.bn_relu(x, self.is_training)
+        x = tf_utils.bn_relu(x, self.is_training)
 
         return x
 
-    def _conv(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
+    def _conv(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
         return tf.layers.conv2d(x, filters, filter_size, 
                                 strides=strides, padding=padding, 
                                 kernel_initializer=kernel_initializer, 
                                 kernel_regularizer=self.l2_regularizer)
 
-    def _conv_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()):
+    def _conv_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._conv(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
-        x = utils.bn_relu(x, self.is_training)
+        x = tf_utils.bn_relu(x, self.is_training)
 
         return x
     
-    def _convtrans(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.xavier_initializer()): 
+    def _convtrans(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
         return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding=padding, 
                                           kernel_initializer=kernel_initializer, kernel_regularizer=self.l2_regularizer)
     
-    def _convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=utils.kaiming_initializer()):
+    def _convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._convtrans(x, filters, filter_size, strides, padding=padding)
-        x = utils.bn_relu(x, self.is_training)
+        x = tf_utils.bn_relu(x, self.is_training)
 
         return x
 
-    def _models_key(self):
-        return utils.load_args('models.yaml'), self._name + self._args['model_name']
+    def _get_models(self):
+        return utils.load_args('models.yaml')
+
+    def _get_model_name(self):
+        return self._name + '_' + self._args['model_name']
