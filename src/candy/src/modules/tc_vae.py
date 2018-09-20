@@ -1,6 +1,7 @@
 from modules.beta_vae import BetaVAE
 from modules.utils.distribution import log_normal
 import modules.utils.utils as utils
+import modules.utils.tf_utils as tf_utils
 import numpy as np
 import tensorflow as tf
 
@@ -34,10 +35,10 @@ class TCVAE(BetaVAE):
                 constant = np.log(self.batch_size * self.dataset_size)
                 
                 # sum(log(sum(q(zi|x))) - constant)
-                logqz_marginal_product = tf.reduce_sum(utils.logsumexp(logqz_condx_expanded, axis=1, keepdims=False) - constant, axis=1)
+                logqz_marginal_product = tf.reduce_sum(tf_utils.logsumexp(logqz_condx_expanded, axis=1, keepdims=False) - constant, axis=1)
 
                 # log(sum(q(z|x))) - constant
-                logqz = utils.logsumexp(tf.reduce_sum(logqz_condx_expanded, axis=2), axis=1, keepdims=False) - constant
+                logqz = tf_utils.logsumexp(tf.reduce_sum(logqz_condx_expanded, axis=2), axis=1, keepdims=False) - constant
                 
                 # divided by image_size**2 because we use MSE for reconstruction loss
                 MI_loss = self.alpha * tf.reduce_mean(logqz_condx - logqz) / (self._args['image_size']**2)
@@ -50,7 +51,7 @@ class TCVAE(BetaVAE):
                 reconstruction_loss = tf.losses.mean_squared_error(labels, predictions)
             
             with tf.name_scope('l2_regularization'):
-                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_loss')
+                l2_loss = tf.losses.get_regularization_loss(self._name, name='l2_regularization')
             
             with tf.name_scope('total_loss'):
                 loss = reconstruction_loss + KL_loss + l2_loss
