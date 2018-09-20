@@ -10,7 +10,7 @@ from modules.module import Module
 
 class BetaVAE(Module):
     """ Interface """
-    def __init__(self, name, args, reuse=False, standard_normalization=False):
+    def __init__(self, name, args, reuse=False, standard_normalization=True):
         self.z_size = args['z_size']
         self.image_size = args['image_size']
         self.beta = args[name]['beta']
@@ -43,8 +43,8 @@ class BetaVAE(Module):
             # record an original image
             tf.summary.image('original_image_', self.inputs[:1])
             tf.summary.histogram('original_image_hist_', self.inputs[:1])
-            timage = self._restore_images(self.normalized_images)
-            tf.summary.image('restored_image', timage[:1])
+            # timage = self._restore_images(self.normalized_images)
+            # tf.summary.image('restored_image', timage[:1])
             # record a generated image
             timage = self._restore_images(self.x_mu)
             tf.summary.image('generated_image_', timage[:1])
@@ -73,29 +73,19 @@ class BetaVAE(Module):
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):
-            x = self._conv_bn_relu(x, 16, 3, 2)                  # x = 160, 160, 16
-            x = self._conv_bn_relu(x, 32, 3, 2)                  # x = 80, 80, 32
-            x = self._conv_bn_relu(x, 64, 3, 2)                  # x = 40, 40, 64
-            x = self._conv_bn_relu(x, 128, 3, 2)                 # x = 20, 20, 128
-            x = self._conv_bn_relu(x, 256, 3, 2)                 # x = 10, 10, 256
-            x = self._conv_bn_relu(x, 512, 3, 2)                 # x = 5, 5, 512
+            x = self._conv_bn_relu(x, 16, 3, 2)                       # x = 160, 160, 16
+            x = self._conv_pool_bn_relu(x, 16, 3, 2)                  # x = 80, 80, 32
+            x = self._conv_pool_bn_relu(x, 32, 3, 2)                  # x = 40, 40, 64
+            x = self._conv_pool_bn_relu(x, 64, 3, 2)                  # x = 20, 20, 128
+            x = self._conv_pool_bn_relu(x, 128, 3, 2)                 # x = 10, 10, 256
+            x = self._conv_pool_bn_relu(x, 256, 3, 2)                 # x = 5, 5, 512
             self.dim_feature_map = x
-            # """ Version without dense layer """
-            # x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=tf_utils.xavier_initializer())  
-            # x = 1, 1, 2 * z_size
+            """ Version without dense layer """
+            x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=tf_utils.xavier_initializer())
 
-            # x = tf.reshape(x, [-1, 2 * self.z_size])
-            
-            x = tf.reshape(x, (-1, 5 * 5 * 512))
-            x = self._dense(x, 2 * self.z_size)
+            x = tf.reshape(x, [-1, 2 * self.z_size])
+
             mu, logsigma = tf.split(x, 2, -1)
-
-        # record some weights
-        with tf.variable_scope('encoder', reuse=True):
-            w = tf.get_variable('conv2d/kernel')
-            tf.summary.histogram('conv0_weights_', w)
-            w = tf.get_variable('conv2d_3/kernel')
-            tf.summary.histogram('conv3_weights_', w)
 
         return mu, logsigma
 
@@ -114,13 +104,11 @@ class BetaVAE(Module):
 
         # decoder net
         with tf.variable_scope('decoder', reuse=reuse):
-            # """ Version without dense layer """
-            # x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
+            """ Version without dense layer """
+            x = tf.reshape(x, [-1, 1, 1, self.z_size])                  # x = 1, 1, z_size
 
-            # x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
+            x = self._convtrans_bn_relu(x, 512, 5, 1, padding='valid')   # x = 5, 5, 512
 
-            x = self._dense_bn_relu(x, 5 * 5 * 512)
-            x = tf.reshape(x, (-1, 5, 5, 512))
             x = self._convtrans_bn_relu(x, 256, 3, 2)                    # x = 10, 10, 256
             x = self._convtrans_bn_relu(x, 128, 3, 2)                    # x = 20, 20, 128
             x = self._convtrans_bn_relu(x, 64, 3, 2)                     # x = 40, 40, 64
