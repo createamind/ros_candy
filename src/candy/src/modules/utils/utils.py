@@ -1,19 +1,6 @@
-import tensorflow as tf
 import yaml
 import os
 import sys
-
-# kaiming initializer
-def kaiming_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tf.contrib.layers.variance_scaling_initializer(factor=2, mode='FAN_IN', uniform=uniform, seed=seed, dtype=dtype)
-
-# xavier initializer
-def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tf.contrib.layers.variance_scaling_initializer(factor=1, mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
-
-# relu and batch normalization
-def bn_relu(layer, training): 
-    return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
 
 def default_path(filename):
     return os.path.join(sys.path[0], filename)
@@ -38,34 +25,4 @@ def save_args(args, args_to_update=None, filename='args.yaml'):
             yaml.dump(args_to_update, f)
         except yaml.YAMLError as exc:
             print(exc)
-        
-def logsumexp(value, axis=None, keepdims=False):
-    if axis is not None:
-        max_value = tf.reduce_max(value, axis=axis, keepdims=True)
-        value0 = value - max_value    # for numerical stability
-        if keepdims is False:
-            max_value = tf.squeeze(max_value)
-        return max_value + tf.log(tf.reduce_sum(tf.exp(value0),
-                                                axis=axis, keepdims=keepdims))
-    else:
-        max_value = tf.reduce_max(value)
-        return max_value + tf.log(tf.reduce_sum(tf.exp(value - max_value)))
-
-def standard_normalization(images):
-    mean, var = tf.nn.moments(images, [0, 1, 2])
-    std = tf.sqrt(var)
-
-    normalized_images = (images - mean) / std
-    
-    return normalized_images, mean, std
-
-def range_normalization(images, new_min=-1., new_max=1., output_int=False):
-    orig_min = tf.reduce_min(images, (0, 1, 2))
-    orig_max = tf.reduce_max(images, (0, 1, 2))
-
-    normalized_images = images * (new_max - new_min) / (orig_max - orig_min) + new_min
-    if output_int:
-        normalized_images = tf.cast(normalized_images, tf.uint8)
-
-    return normalized_images, orig_min, orig_max
     
