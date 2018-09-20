@@ -90,6 +90,14 @@ class Module(object):
 
         return x
 
+    def _conv_pool_bn_relu(self, x, filters, filter_size, strides=1):
+        y = x
+        y = self._conv(y, filters, filter_size, strides, padding='same', kernel_initializer=tf_utils.kaiming_initializer())
+        y = tf_utils.bn_relu(y, self.is_training)
+        x = tf.layers.average_pooling2d(x, strides, strides, padding='same')
+
+        return tf.concat([x, y], -1)
+
     def _get_models(self):
         return utils.load_args('models.yaml')
 
