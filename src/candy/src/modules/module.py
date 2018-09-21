@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.contrib as tc
 import modules.utils.utils as utils
 import modules.utils.tf_utils as tf_utils
 import os
@@ -21,7 +22,8 @@ class Module(object):
 
     def build_graph(self):
         with tf.variable_scope(self.name, reuse=self.reuse):
-            self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self.name]['weight_decay'])
+            scale = self._args[self.name]['weight_decay'] if self.name in self._args and 'weight_decay' in self._args[self.name] else 0.
+            self.l2_regularizer = tc.layers.l2_regularizer(scale)
 
             self._build_graph()
 
@@ -76,8 +78,9 @@ class Module(object):
             global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
             self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
-
-            tf.summary.scalar('learning_rate_', learning_rate)
+            
+            if self.log_tensorboard:
+                tf.summary.scalar('learning_rate_', learning_rate)
 
         with tf.control_dependencies(update_ops):
             opt_op = self._optimizer.minimize(loss, var_list=self.trainable_variables, global_step=global_step)
