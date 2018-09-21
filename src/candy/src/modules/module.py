@@ -21,6 +21,8 @@ class Module(object):
 
     def build_graph(self):
         with tf.variable_scope(self.name, reuse=self.reuse):
+            self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self.name]['weight_decay'])
+
             self._build_graph()
 
             collection = tf.global_variables(self.name)

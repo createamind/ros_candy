@@ -32,8 +32,6 @@ class BetaVAE(Module):
             self.inputs = tf.placeholder(tf.float32, (None, self.image_size, self.image_size, 3), name='inputs')
             self.is_training = tf.placeholder(tf.bool, (None), name='is_training')
         
-        self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self.name]['weight_decay'])
-
         self.normalized_images = self._preprocess_images(self.inputs)
         self.z_mu, self.z_logsigma = self._encode(self.normalized_images)
         self.sample_z = self._sample_norm(self.z_mu, self.z_logsigma, 'sample_z')
