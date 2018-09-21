@@ -7,14 +7,14 @@ import tensorflow as tf
 
 class TCVAE(BetaVAE):
     """ Interface """
-    def __init__(self, name, args, reuse=False):
+    def __init__(self, name, args, reuse=False, build_graph=True, log_tensorboard=False):
         self.dataset_size = args['dataset_size']
         self.batch_size = args['batch_size']
         self.alpha = args[name]['alpha']
         self.beta = args[name]['beta']
         self.gamma = args[name]['gamma']
 
-        super(TCVAE, self).__init__(name, args, reuse)
+        super(TCVAE, self).__init__(name, args, reuse=reuse, build_graph=build_graph, log_tensorboard=log_tensorboard)
 
     """ Implementation """
     def _loss(self, mu, logsigma, predictions, labels):
@@ -56,13 +56,14 @@ class TCVAE(BetaVAE):
             with tf.name_scope('total_loss'):
                 loss = reconstruction_loss + KL_loss + l2_loss
 
-            tf.summary.scalar('Reconstruction_error_', reconstruction_loss)
-            tf.summary.scalar('MI_loss_', MI_loss)
-            tf.summary.scalar('TC_loss_', TC_loss)
-            tf.summary.scalar('Dimension_wise_KL_', dimension_wise_KL)
-            tf.summary.scalar('KL_loss_', KL_loss)
-            tf.summary.scalar('L2_loss_', l2_loss)
-            tf.summary.scalar('Total_loss_', loss)
+            if self.log_tensorboard:
+                tf.summary.scalar('Reconstruction_error_', reconstruction_loss)
+                tf.summary.scalar('MI_loss_', MI_loss)
+                tf.summary.scalar('TC_loss_', TC_loss)
+                tf.summary.scalar('Dimension_wise_KL_', dimension_wise_KL)
+                tf.summary.scalar('KL_loss_', KL_loss)
+                tf.summary.scalar('L2_loss_', l2_loss)
+                tf.summary.scalar('Total_loss_', loss)
 
         return loss
 

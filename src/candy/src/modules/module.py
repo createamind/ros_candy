@@ -6,18 +6,21 @@ import sys
 
 class Module(object):
     """ Interface """
-    def __init__(self, name, args, reuse=False, build_graph=True):
+    def __init__(self, name, args, reuse=False, build_graph=True, log_tensorboard=False):
         self._args = args
         self.name = name
         self.reuse = reuse
+        self.log_tensorboard = log_tensorboard
 
         if build_graph:
             self.build_graph()
 
+    @property
+    def trainable_variables(self):
+        return tf.trainable_variables(scope=self.name)
+
     def build_graph(self):
         with tf.variable_scope(self.name, reuse=self.reuse):
-            self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self.name]['weight_decay'])
-
             self._build_graph()
 
             collection = tf.global_variables(self.name)
@@ -58,7 +61,7 @@ class Module(object):
     def _build_graph(self):
         raise NotImplementedError
 
-    def _optimize(self, loss, log_tensorboard=True):
+    def _optimize(self, loss):
         # params for optimizer
         init_learning_rate = self._args[self.name]['learning_rate'] if 'learning_rate' in self._args[self.name] else 1e-3
         beta1 = self._args[self.name]['beta1'] if 'beta1' in self._args[self.name] else 0.9
@@ -77,7 +80,7 @@ class Module(object):
         with tf.control_dependencies(update_ops):
             opt_op = self._optimizer.minimize(loss, var_list=self.trainable_variables, global_step=global_step)
 
-        if log_tensorboard:
+        if self.log_tensorboard:
             with tf.name_scope('gradients'):
                 grad_var_pairs = self._optimizer.compute_gradients(loss)
                 for grad, var in grad_var_pairs:
@@ -136,7 +139,3 @@ class Module(object):
 
     def _get_model_name(self):
         return self.name + '_' + self._args['model_name']
-
-    @property
-    def trainable_variables(self):
-        return tf.trainable_variables(scope=self.name)

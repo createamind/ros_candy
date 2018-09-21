@@ -10,12 +10,12 @@ from modules.module import Module
 
 class BetaVAE(Module):
     """ Interface """
-    def __init__(self, name, args, reuse=False, standard_normalization=True):
+    def __init__(self, name, args, reuse=False, build_graph=True, log_tensorboard=False, standard_normalization=True):
         self.z_size = args['z_size']
         self.image_size = args['image_size']
         self.beta = args[name]['beta']
         self.standard_normalization = standard_normalization
-        super(BetaVAE, self).__init__(name, args, reuse)
+        super(BetaVAE, self).__init__(name, args, reuse=reuse, build_graph=build_graph, log_tensorboard=log_tensorboard)
 
     def generate(self, sess, num_images=1):
         with tf.name_scope(self.name):
@@ -31,7 +31,9 @@ class BetaVAE(Module):
         with tf.name_scope('placeholder'):
             self.inputs = tf.placeholder(tf.float32, (None, self.image_size, self.image_size, 3), name='inputs')
             self.is_training = tf.placeholder(tf.bool, (None), name='is_training')
-                
+        
+        self.l2_regularizer = tf.contrib.layers.l2_regularizer(self._args[self.name]['weight_decay'])
+
         self.normalized_images = self._preprocess_images(self.inputs)
         self.z_mu, self.z_logsigma = self._encode(self.normalized_images)
         self.sample_z = self._sample_norm(self.z_mu, self.z_logsigma, 'sample_z')
@@ -39,17 +41,18 @@ class BetaVAE(Module):
         self.loss = self._loss(self.z_mu, self.z_logsigma, self.normalized_images, self.x_mu)
         self.opt_op = self._optimize(self.loss)
 
-        # add images to tf.summary
-        with tf.name_scope('image'):
-            # record an original image
-            tf.summary.image('original_image_', self.inputs[:1])
-            tf.summary.histogram('original_image_hist_', self.inputs[:1])
-            # timage = self._restore_images(self.normalized_images)
-            # tf.summary.image('restored_image', timage[:1])
-            # record a generated image
-            timage = self._restore_images(self.x_mu)
-            tf.summary.image('generated_image_', timage[:1])
-            tf.summary.histogram('generated_image_hist_', timage[:1])
+        if self.log_tensorboard:
+            # add images to tf.summary
+            with tf.name_scope('image'):
+                # record an original image
+                tf.summary.image('original_image_', self.inputs[:1])
+                tf.summary.histogram('original_image_hist_', self.inputs[:1])
+                # timage = self._restore_images(self.normalized_images)
+                # tf.summary.image('restored_image', timage[:1])
+                # record a generated image
+                timage = self._restore_images(self.x_mu)
+                tf.summary.image('generated_image_', timage[:1])
+                tf.summary.histogram('generated_image_hist_', timage[:1])
 
     def _preprocess_images(self, images):
         with tf.name_scope('preprocessing'):
@@ -120,10 +123,11 @@ class BetaVAE(Module):
 
             x_mu = x
             
-        # record some weights
-        with tf.variable_scope('decoder', reuse=True):
-            w = tf.get_variable('conv2d_transpose_5/kernel')
-            tf.summary.histogram('convtrans5_weights_', w)
+        if self.log_tensorboard:
+            # record some weights
+            with tf.variable_scope('decoder', reuse=True):
+                w = tf.get_variable('conv2d_transpose_5/kernel')
+                tf.summary.histogram('convtrans5_weights_', w)
 
         return x_mu
 
@@ -141,9 +145,10 @@ class BetaVAE(Module):
             with tf.name_scope('total_loss'):
                 loss = reconstruction_loss + KL_loss + l2_loss
 
-            tf.summary.scalar('Reconstruction_error_', reconstruction_loss)
-            tf.summary.scalar('KL_loss_', KL_loss)
-            tf.summary.scalar('L2_loss_', l2_loss)
-            tf.summary.scalar('Total_loss_', loss)
+            if self.log_tensorboard:
+                tf.summary.scalar('Reconstruction_error_', reconstruction_loss)
+                tf.summary.scalar('KL_loss_', KL_loss)
+                tf.summary.scalar('L2_loss_', l2_loss)
+                tf.summary.scalar('Total_loss_', loss)
         
         return loss
