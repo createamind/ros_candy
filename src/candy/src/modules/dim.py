@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib as tc
 from modules.beta_vae import BetaVAE
 import modules.utils.utils as utils
 import modules.utils.tf_utils as tf_utils
@@ -13,7 +14,7 @@ class DIM(BetaVAE):
     def _loss(self, mu, logsigma, predictions, labels):
         with tf.variable_scope('loss', reuse=self.reuse):
             with tf.variable_scope('local_MI', reuse=self.reuse):
-                T_joint, T_prod, E_joint, E_prod = self._score(self.z_mu)
+                E_joint, E_prod = self._score(self.z)
 
                 local_MI = E_joint - E_prod
             
@@ -50,7 +51,7 @@ class DIM(BetaVAE):
             E_joint = tf.reduce_mean(log2 - tf.math.softplus(-T_joint))
             E_prod = tf.reduce_mean(tf.math.softplus(-T_prod) + T_prod - log2)
 
-        return T_joint, T_prod, E_joint, E_prod
+        return E_joint, E_prod
 
     def _get_score(self, z, shuffle=False):
         with tf.name_scope('score'):
@@ -59,8 +60,8 @@ class DIM(BetaVAE):
             z_channels = z.shape.as_list()[-1]
 
             if shuffle:
-                feature_map = tf.reshape(feature_map, (-1, channels))
-                feature_map = tf.random_shuffle(feature_map)
+                feature_map = tf.reshape(feature_map, (-1, height * width, channels))
+                feature_map = self._local_shuffle(feature_map)
                 feature_map = tf.reshape(feature_map, (-1, height, width, channels))
                 feature_map = tf.stop_gradient(feature_map)
             
@@ -88,13 +89,16 @@ class DIM(BetaVAE):
 
         return x
 
-    # def _random_permute(self, x):
-    #     _, d2, d3 = x.shape.as_list()
-    #     d1 = self._args['batch_size']
-    #     b = np.random.rand(d1, d2)
-    #     idx = np.argsort(b, 0)
-    #     adx = np.arange(0, d2)
-    #     adx = np.broadcast_to(adx, (d1, d2))
-    #     x = x[idx, adx]
+    def _local_shuffle(self, x):
+        with tf.name_scope('local_shuffle'):
+            _, d1, d2 = x.shape
+            d0 = tf.cond(self.is_training, lambda: tf.constant(self._args['batch_size']), lambda: tf.constant(1))
+            b = tf.random_uniform(tf.stack([d0, d1]))
+            idx = tc.framework.argsort(b, 0)
+            idx = tf.reshape(idx, [-1])
+            adx = tf.range(d1)
+            adx = tf.tile(adx, [d0])
 
-    #     return x
+            x = tf.reshape(tf.gather_nd(x, tf.stack([idx, adx], axis=1)), (d0, d1, d2))
+
+        return x
