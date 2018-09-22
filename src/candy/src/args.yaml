@@ -3,24 +3,24 @@ camera:
     learning_rate: 0.0001
     decay_rate: 0.95
     decay_steps: 100
-    weight_decay: 0.01
-    alpha: -10
+    weight_decay: 0.0001
+    alpha: 1
     beta: 1
     gamma: 1
 left_eye:
     learning_rate: 0.0001
     decay_rate: 0.95
     decay_steps: 100
-    weight_decay: 0.01
-    alpha: -10
+    weight_decay: 0.0001
+    alpha: 1
     beta: 1
     gamma: 1
 right_eye:
     learning_rate: 0.0001
     decay_rate: 0.95
     decay_steps: 100
-    weight_decay: 0.01
-    alpha: -10
+    weight_decay: 0.0001
+    alpha: 1
     beta: 1
     gamma: 1
 ppo:
@@ -28,14 +28,25 @@ ppo:
     weight_decay: 0.001
     gamma: 0.9
     tau: 0.001
-    noise_decay: 1.000005
-    state_size: 128
+    init_noise_sigma: 0.1
+    noise_decay: 0.999995
+    state_size: 64
     action_size: 10
+    reward_size: 1
+    done: 1
+actor:
+    learning_rate: 0.0005
+    decay_rate: 0.95
+    decay_steps: 100
+critic:
+    learning_rate: 0.0005
+    decay_rate: 0.95
+    decay_steps: 100
 
 imitation_coefficient: 0.9
 batch_size: 32
 image_size: 320
 dataset_size: 10000
-z_size: 128
+z_size: 256
 
-model_name: DIM-0.0001-l2loss-normalized_image-z128-conv_avg_pool
+model_name: dim-0.0001-l2loss-normalized_image-z128-conv_avg_pool
