@@ -1,1 +1,1 @@
-learning_rate-learning_rate_decay-weight_decay-loss_function-others
+model_name-(learning_rate_decay_rate_decay_steps)-loss_function-others
