@@ -45,7 +45,7 @@ class Agent(object):
         # target net operations
         target_main_var_pairs = zip(self._target_variables, self.main_variables)
         self.init_target_op = list(map(lambda v: v[0].assign(v[1]), target_main_var_pairs))
-        self.update_target_op = list(map(lambda v: v[0].assign(self.tau * v[0] + (1. - self.tau) * v[1]), target_main_var_pairs))
+        self.update_target_op = list(map(lambda v: v[0].assign(self.tau * v[1] + (1. - self.tau) * v[0]), target_main_var_pairs))
 
         # operations that add/remove noise from parameters
         self.noise_op, self.denoise_op = self._noise_params()
