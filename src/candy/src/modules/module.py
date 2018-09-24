@@ -45,7 +45,7 @@ class Module(object):
             else:
                 models = self._get_models()
                 key = self._get_model_name()
-                path_prefix = filename if filename is not None else (models[key] if key in models else NO_SUCH_FILE)
+                path_prefix = models[key] if key in models else NO_SUCH_FILE
             if path_prefix != NO_SUCH_FILE:
                 try:
                     self._saver.restore(sess, path_prefix)
@@ -83,17 +83,19 @@ class Module(object):
                 tf.summary.scalar('learning_rate_', learning_rate)
 
         with tf.control_dependencies(update_ops):
-            opt_op = self._optimizer.minimize(loss, var_list=self.trainable_variables, global_step=global_step)
+            tvars = self.trainable_variables
+            grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), 5)
+            opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+            if self.log_tensorboard:
+                with tf.name_scope('gradients_'):
+                    for grad, var in zip(grads, tvars):
+                        if grad is None:
+                            continue
+                        else:
+                            tf.summary.histogram(var.name.replace(':0', ''), grad)
 
         if self.log_tensorboard:
-            with tf.name_scope('gradients'):
-                grad_var_pairs = self._optimizer.compute_gradients(loss)
-                for grad, var in grad_var_pairs:
-                    if grad is None:
-                        continue
-                    tf.summary.histogram(var.name.replace(':0', '/gradient'), grad)
-
-            with tf.name_scope('weights'):
+            with tf.name_scope('weights_'):
                 for var in self.trainable_variables:
                     tf.summary.histogram(var.name.replace(':0', ''), var)
             
@@ -106,6 +108,12 @@ class Module(object):
     def _dense_bn_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._dense(x, units, kernel_initializer=kernel_initializer)
         x = tf_utils.bn_relu(x, self.is_training)
+
+        return x
+
+    def _dense_ln_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
+        x = self._dense(x, 256, kernel_initializer=kernel_initializer)
+        x = tf_utils.ln_relu(x)
 
         return x
 
