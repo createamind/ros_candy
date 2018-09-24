@@ -1,6 +1,7 @@
 ---
 camera:
-    learning_rate: 0.0001
+    learning_rate: 0.00001
+    beta1: 0.5
     decay_rate: 0.95
     decay_steps: 100
     weight_decay: 0.0001
@@ -8,7 +9,8 @@ camera:
     beta: 1
     gamma: 1
 left_eye:
-    learning_rate: 0.0001
+    learning_rate: 0.00001
+    beta1: 0.5
     decay_rate: 0.95
     decay_steps: 100
     weight_decay: 0.0001
@@ -16,7 +18,8 @@ left_eye:
     beta: 1
     gamma: 1
 right_eye:
-    learning_rate: 0.0001
+    learning_rate: 0.00001
+    beta1: 0.5
     decay_rate: 0.95
     decay_steps: 100
     weight_decay: 0.0001
@@ -47,6 +50,6 @@ imitation_coefficient: 0.9
 batch_size: 32
 image_size: 320
 dataset_size: 10000
-z_size: 256
+z_size: 100
 
-model_name: dim-0.0001-l2loss-normalized_image-z128-conv_avg_pool
+model_name: tcvae-0.00001-l2loss-image64-z100
