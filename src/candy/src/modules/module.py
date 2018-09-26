@@ -116,7 +116,7 @@ class Module(object):
         return x
 
     def _dense_ln_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
-        x = self._dense(x, 256, kernel_initializer=kernel_initializer)
+        x = self._dense(x, units, kernel_initializer=kernel_initializer)
         x = tf_utils.ln_relu(x)
 
         return x
