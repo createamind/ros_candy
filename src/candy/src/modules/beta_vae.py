@@ -75,18 +75,19 @@ class BetaVAE(Module):
         
         # encoder net
         with tf.variable_scope('encoder', reuse=self.reuse):
-            x = self._conv_bn_relu(x, 16, 3, 2)                       # x = 160, 160, 16
-            x = self._conv_pool_bn_relu(x, 16, 3, 2)                  # x = 80, 80, 32
-            x = self._conv_pool_bn_relu(x, 32, 3, 2)                  # x = 40, 40, 64
-            x = self._conv_pool_bn_relu(x, 64, 3, 2)                  # x = 20, 20, 128
-            x = self._conv_pool_bn_relu(x, 128, 3, 2)                 # x = 10, 10, 256
-            x = self._conv_pool_bn_relu(x, 256, 3, 2)                 # x = 5, 5, 512
+            x = self._conv_bn_relu(x, 16, 3, 2)                  # x = 160, 160, 16
+            x = self._conv_bn_relu(x, 32, 3, 2)                  # x = 80, 80, 32
+            x = self._conv_bn_relu(x, 64, 3, 2)                  # x = 40, 40, 64
+            x = self._conv_bn_relu(x, 128, 3, 2)                 # x = 20, 20, 128
+            x = self._conv_bn_relu(x, 256, 3, 2)                 # x = 10, 10, 256
             self.dim_feature_map = x
+            x = self._conv_bn_relu(x, 512, 3, 2)                 # x = 5, 5, 512
             """ Version without dense layer """
             x = self._conv(x, 2 * self.z_size, 5, padding='valid', kernel_initializer=tf_utils.xavier_initializer())
 
             x = tf.reshape(x, [-1, 2 * self.z_size])
-
+            self.z = x
+            
             mu, logsigma = tf.split(x, 2, -1)
 
         return mu, logsigma

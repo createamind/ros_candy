@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
-from modules.tc_vae import TCVAE
+from modules.dim import DIM
 from modules.ppo import PPO
 
 import tensorflow as tf
@@ -29,9 +29,9 @@ class Machine(object):
         self._args = args
 
         #Building Graph
-        self.camera = TCVAE('camera', args, reuse=False, log_tensorboard=True)
-        self.left_eye = TCVAE('left_eye', args, reuse=False)
-        self.right_eye = TCVAE('right_eye', args, reuse=False)
+        self.camera = DIM('camera', args, reuse=False, log_tensorboard=True)
+        self.left_eye = DIM('left_eye', args, reuse=False)
+        self.right_eye = DIM('right_eye', args, reuse=False)
 
         self.speed = tf.placeholder(tf.float32, shape=(self._args['batch_size'], 1), name='speed')
         self.test_speed = tf.placeholder(tf.float32, shape=(1, 1), name='test_speed')

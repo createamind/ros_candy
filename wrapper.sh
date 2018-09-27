@@ -4,4 +4,4 @@ export ROS_MASTER_URI=http://jz:$PORT/
 source /home/imin/ros_candy/devel/setup.zsh
 source activate candy
 
-CUDA_VISIBLE_DEVICES=2 rosrun candy wrapper_candy.py -l -t
+CUDA_VISIBLE_DEVICES=1 rosrun candy wrapper_candy.py -l -t

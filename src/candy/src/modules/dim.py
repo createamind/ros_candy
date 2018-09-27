@@ -77,15 +77,13 @@ class DIM(BetaVAE):
         return scores
 
     def _local_discriminator(self, feature_map, reuse):
-        with tf.variable_scope('discriminator_net', reuse=reuse) as net:
-            x = self._conv(feature_map, 256, 1, kernel_initializer=tf_utils.kaiming_initializer())
+        with tf.variable_scope('discriminator_net', reuse=reuse):
+            x = self._conv(feature_map, 512, 1, kernel_initializer=tf_utils.kaiming_initializer())
             x = tf.nn.relu(x)
-            x = self._conv(feature_map, 256, 1, kernel_initializer=tf_utils.kaiming_initializer())
+            x = self._conv(feature_map, 512, 1, kernel_initializer=tf_utils.kaiming_initializer())
             x = tf.nn.relu(x)
             x = self._conv(feature_map, 1, 1, kernel_initializer=tf_utils.kaiming_initializer())
             x = tf.nn.relu(x)
-            
-            net.reuse_variables()
 
         return x
 
