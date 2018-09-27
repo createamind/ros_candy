@@ -77,7 +77,7 @@ class Module(object):
         decay_rate = self._args[self.name]['decay_rate'] if 'decay_rate' in self._args[self.name] else 0.95
         decay_steps = self._args[self.name]['decay_steps'] if 'decay_steps' in self._args[self.name] else 1000
 
-        with tf.name_scope('optimizer'):
+        with tf.variable_scope('optimizer', reuse=self.reuse):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
